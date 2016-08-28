@@ -1,0 +1,4 @@
+Flask==0.11.1
+Flask-Migrate==2.0.0
+Flask-SQLAlchemy==2.1
+PyJWT==1.4.2
