@@ -5,16 +5,38 @@ from functools import wraps
 from werkzeug.exceptions import BadRequest
 from loc.models import Role, User, UserRole
 
+import datetime
 import jwt
+
+def generate_expiration_date(**kwargs):
+    """Generate an expiration date starting on current UTC datetime.
+
+    Arguments correspond to those of the `datetime.timedelta()` function.
+    """
+    return datetime.datetime.utcnow() + datetime.timedelta(**kwargs)
+
+def generate_token(length=32):
+    """Generate a random token.
+
+    Args:
+        length (int): Number of characters in the token.
+
+    Returns:
+        Random character sequence.
+    """
+    #TODO
+    token = ''
+
+    return token
 
 def hash_password(password):
     """Hash the provided password using a specific algorithm.
 
     Args:
-        password (str): Plaintext password
+        password (str): Plaintext password.
 
     Returns:
-        Hashed password
+        Hashed password.
     """
     #TODO
     return password
@@ -94,7 +116,6 @@ def role_required(role):
 
             if not user:
                 abort(401)
-
 
             # Check role
             user_role = (

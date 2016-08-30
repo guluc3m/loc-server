@@ -52,10 +52,10 @@ def login():
 
     # Create JWT token
     if remember:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(years=1)
+        expire = util.generate_expiration_date(years=1)
 
     else:
-        expire = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        expire = util.generate_expiration_date(days=1)
 
     encoded = jwt.encode(
         {
@@ -68,6 +68,59 @@ def login():
     )
 
     return jsonify(**encoded)
+
+@bp_session.route('/reset-password', methods=['POST'])
+def send_reset_token():
+    """Generate and send a token to reset user password.
+
+    Params:
+        email (str)
+    """
+    received = request.get_json()
+
+    email = received.get('email')
+
+    if not email:
+        abort(404)
+
+    # Check user record
+    user = (
+        User
+        .query
+        .filter_by(email=email)
+    ).first()
+
+    if not user:
+        abort(404)
+
+    # Generate token
+    token = util.generate_token()
+
+    while User.query(exists().where(User.password_reset_token==token)).scalar():
+        token = util.generate_token()
+
+    user.password_reset_token = token
+    user.token_expiration = util.generate_expiration_date(days=1)
+
+    try:
+        correct = True
+        db.session.commit()
+
+    except Exception as e:
+        #TODO log error
+        correct = False
+
+    finally:
+        if not correct:
+            db.session.rollback()
+            abort(500)
+
+    #TODO send email
+
+    response = {}
+
+    return jsonify(**response), 200
+
 
 @bp_session.route('/signup', methods=['POST'])
 def signup():
