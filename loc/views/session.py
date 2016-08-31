@@ -6,8 +6,8 @@ from flask import Blueprint, abort, current_app, request
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import exists
 from loc import db
-from loc.lib import messages as msg
-from loc.lib.util import api_error, api_fail, api_success, \
+from loc.helper import messages as msg
+from loc.helper.util import api_error, api_fail, api_success, \
         generate_expiration_date, generate_token, hash_password
 from loc.models import User
 

@@ -4,9 +4,9 @@
 
 from flask import Blueprint, abort, request
 from loc import db
-from loc.lib import messages as msg
-from loc.lib.deco import login_required
-from loc.lib.util import api_error, api_success, user_from_jwt
+from loc.helper import messages as msg
+from loc.helper.deco import login_required
+from loc.helper.util import api_error, api_success, user_from_jwt
 
 
 bp_profile = Blueprint('profile', __name__)
