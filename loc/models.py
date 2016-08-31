@@ -143,6 +143,7 @@ class Team(db.Model):
         match_id (int): ID of the match.
         num_members (int): Total number of members in the team.
         is_participating (bool): Whether all members have accepted or not.
+        is_disqualified (bool): Whether the team is disqualified or not.
         is_winner (bool): Whether the team has won or not.
     """
     __tablename__ = 'teams'
@@ -153,6 +154,7 @@ class Team(db.Model):
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
     num_members = db.Column(db.Integer, nullable=False, default=1)
     is_participating = db.Column(db.Boolean, nullable=False, default=False)
+    is_disqualified = db.Column(db.Boolean, nullable=False, default=False)
     is_winner = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relationships
