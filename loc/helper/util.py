@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""Helper functions."""
-
 from flask import jsonify, current_app
 from loc.models import User
 
