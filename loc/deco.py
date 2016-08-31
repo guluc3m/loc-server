@@ -2,9 +2,11 @@
 
 """Decorator functions."""
 
-from flask import abort, current_app, request
+from flask import abort, current_app, jsonify, request
 from functools import wraps
 from werkzeug.exceptions import BadRequest
+from loc import messages as msg
+from loc import util
 from loc.models import Role, User, UserRole
 
 import jwt
@@ -21,10 +23,11 @@ def login_required(f):
             jwt_token = request.get_json().get('token')
 
         except BadRequest as e:
-            return e
+            # TODO log except
+            abort(500)
 
         if not jwt_token:
-            abort(401)
+            return util.api_fail(token=msg.JWT_MISSING), 401
 
         # Decode
         try:
@@ -32,7 +35,7 @@ def login_required(f):
 
         except jwt.ExpiredSignatureError:
             #TODO log
-            abort(401)
+            return util.api_error(msg.JWT_EXPIRED), 401
 
         # Get user
         user = User.query.filter_by(
@@ -41,7 +44,7 @@ def login_required(f):
         ).first()
 
         if not user:
-            abort(401)
+            return util.api_error(msg.USER_NOT_FOUND), 401
 
         return f(*args, **kwargs)
 
@@ -63,10 +66,11 @@ def role_required(role):
                 jwt_token = request.get_json().get('token')
 
             except BadRequest as e:
-                return e
+                # TODO log except
+                abort(500)
 
             if not jwt_token:
-                abort(401)
+                return util.api_fail(token=msg.JWT_MISSING), 401
 
             # Decode
             try:
@@ -74,7 +78,7 @@ def role_required(role):
 
             except jwt.ExpiredSignatureError:
                 #TODO log
-                abort(401)
+                return util.api_error(msg.JWT_EXPIRED), 401
 
             # Get user
             user = User.query.filter_by(
@@ -83,7 +87,7 @@ def role_required(role):
             ).first()
 
             if not user:
-                abort(401)
+                return util.api_error(msg.USER_NOT_FOUND), 401
 
             # Check role
             user_role = (
@@ -95,7 +99,7 @@ def role_required(role):
             ).first()
 
             if not user_role:
-                abort(401)
+                return util.api_error(msg.ROLE_MISSING), 401
 
             return f(*args, **kwargs)
 

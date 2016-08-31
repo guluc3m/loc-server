@@ -1,0 +1,8 @@
+# -*- coding: utf-8 -*-
+
+"""Status messages."""
+
+JWT_EXPIRED = 'JWT_EXPIRED'
+JWT_MISSING = 'JWT_MISSING'
+ROLE_MISSING = 'ROLE_MISSING'
+USER_NOT_FOUND = 'USER_NOT_FOUND'

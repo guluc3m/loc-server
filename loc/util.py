@@ -2,11 +2,62 @@
 
 """Helper functions."""
 
-from flask import current_app
+from flask import jsonify, current_app
 from loc.models import User
 
 import datetime
 import jwt
+
+def api_error(message='', **kwargs):
+    """Generate an error JSON response.
+
+    This response is based on the JSend specification and should be used when
+    there is an API call fails due to an error processing the request.
+
+    Keyword arguments are included in the 'data' attribute of the response. This
+    attribute is optional.
+
+    Args:
+        message (str): Message to include in the response
+    """
+    response = {
+        'status': 'error',
+        'message': message
+    }
+
+    if kwargs:
+        response['data'] = kwargs
+
+    return jsonify(**response)
+
+def api_fail(**kwargs):
+    """Generate a failure JSON response.
+
+    This response is based on the JSend specification and should be used when
+    the data received is invalid.
+
+    Keyword arguments are included in the 'data' attribute of the response.
+    """
+    response = {
+        'status': 'fail',
+        'data': kwargs
+    }
+
+    return jsonify(**response)
+
+def api_success(**kwargs):
+    """Generate a success JSON response.
+
+    This response is based on the JSend specification.
+
+    Keyword arguments are included in the 'data' attribute of the response.
+    """
+    response = {
+        'status': 'success',
+        'data': kwargs
+    }
+
+    return jsonify(**response)
 
 def generate_expiration_date(**kwargs):
     """Generate an expiration date starting on current UTC datetime.
