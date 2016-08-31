@@ -2,7 +2,7 @@
 
 """Management of user profile."""
 
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, request
 from loc import db, util
 from loc import messages as msg
 from loc.deco import login_required
@@ -28,7 +28,7 @@ def show_profile():
         'score': user.score
     }
 
-    return jsonify(**response), 200
+    return util.api_success(**response), 200
 
 @bp_profile.route('/profile/edit', methods=['GET','POST'])
 @login_required
@@ -53,7 +53,7 @@ def update_profile():
             'email': user.email
         }
 
-        return jsonify(**response)
+        return util.api_success(**response), 200
 
     # Update information
     name = received.get('name', '')
@@ -81,4 +81,4 @@ def update_profile():
         'email': user.email
     }
 
-    return jsonify(**response), 200
+    return util.api_success(**response), 200

@@ -2,7 +2,7 @@
 
 """Management of user sessions."""
 
-from flask import Blueprint, abort, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, request
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import exists
 from loc import db, util
@@ -78,7 +78,72 @@ def login():
         algorithm=current_app.config['JWT_ALGORITHM']
     )
 
-    return jsonify(**encoded)
+    return util.api_success(jwt=encoded), 200
+
+
+@bp_session.route('/reset-password/<token>', methods=['POST'])
+def reset_password(token):
+    """Reset user password.
+
+    Args:
+        token (str)
+
+    Params:
+        password (str)
+    """
+    # Check token is valid
+    token_valid = db.session.query(
+        User
+        .query
+        .filter(
+            User.password_reset_token==token,
+            User.token_expiration>datetime.datetime.utcnow(),
+            User.is_deleted==False
+        ).exists()
+    ).scalar()
+
+    if not token_valid:
+        return util.api_fail(token=msg.INVALID_TOKEN), 404
+
+    # Update password
+    received = request.get_json()
+
+    password = received.get('password')
+
+    if not password:
+        return util.api_fail(password=msg.FIELD_MISSING), 404
+
+    # Update user record
+    user = (
+        User
+        .query
+        .filter_by(password_reset_token=token)
+    ).first()
+
+    if not user:
+        return util.api_fail(email=msg.USER_NOT_FOUND), 404
+
+    user.password = util.hash_password(password)
+    user.password_reset_token = None
+    user.token_expiration = None
+
+    try:
+        correct = True
+        db.session.commit()
+
+    except Exception as e:
+        #TODO log error
+        correct = False
+
+    finally:
+        if not correct:
+            db.session.rollback()
+            abort(500)
+
+    #TODO send email
+
+    return util.api_success(), 200
+
 
 @bp_session.route('/reset-password', methods=['POST'])
 def send_reset_token():
@@ -128,9 +193,7 @@ def send_reset_token():
 
     #TODO send email
 
-    response = {}
-
-    return jsonify(**response), 200
+    return util.api_success(), 200
 
 
 @bp_session.route('/signup', methods=['POST'])
@@ -199,6 +262,4 @@ def signup():
             db.session.rollback()
             abort(500)
 
-    response = {}
-
-    return jsonify(**response), 201
+    return util.api_success(username=username), 201

@@ -101,8 +101,8 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
 
-    @staticmethod
-    def get_role(name):
+    @classmethod
+    def get_role(cls, name):
         """Obtain an already existing role by name.
 
         Args:
@@ -111,7 +111,7 @@ class Role(db.Model):
         Returns:
             `Role` instance or `None` if not found
         """
-        return Role.query.filter_by(name=name).first()
+        return cls.query.filter_by(name=name).first()
 
 
 class Submission(db.Model):
@@ -286,6 +286,7 @@ class User(db.Model):
         """Obtain friends (sent and received invitations)."""
         return self._friends_sent.union(self._friends_received)
 
+    @property
     def teams(self):
         """Obtain teams of which the user is owner or member."""
         return self._teams.union(self._teams_owner)
