@@ -3,10 +3,10 @@
 """Management of user profile."""
 
 from flask import Blueprint, abort, request
-from loc import db, util
-from loc import messages as msg
-from loc.deco import login_required
-from loc.models import User
+from loc import db
+from loc.lib import messages as msg
+from loc.lib.deco import login_required
+from loc.lib.util import api_error, api_success, user_from_jwt
 
 
 bp_profile = Blueprint('profile', __name__)
@@ -17,10 +17,10 @@ bp_profile = Blueprint('profile', __name__)
 def show_profile():
     """Show currently logged in user's profile."""
     jwt_token = request.get_json().get('token')
-    user = util.user_from_jwt(jwt_token)
+    user = user_from_jwt(jwt_token)
 
     if not user:
-        return util.api_error(msg.USER_NOT_FOUND), 404
+        return api_error(msg.USER_NOT_FOUND), 404
 
     response = {
         'username': user.username,
@@ -28,7 +28,8 @@ def show_profile():
         'score': user.score
     }
 
-    return util.api_success(**response), 200
+    return api_success(**response), 200
+
 
 @bp_profile.route('/profile/edit', methods=['GET','POST'])
 @login_required
@@ -41,10 +42,10 @@ def update_profile():
     After update (POST request), returns updated information.
     """
     received = request.get_json()
-    user = util.user_from_jwt(received.get('token'))
+    user = user_from_jwt(received.get('token'))
 
     if not user:
-        return util.api_error(msg.USER_NOT_FOUND), 404
+        return api_error(msg.USER_NOT_FOUND), 404
 
     if request.method == 'GET':
         # Get information that can be edited
@@ -53,7 +54,7 @@ def update_profile():
             'email': user.email
         }
 
-        return util.api_success(**response), 200
+        return api_success(**response), 200
 
     # Update information
     name = received.get('name', '')
@@ -81,4 +82,4 @@ def update_profile():
         'email': user.email
     }
 
-    return util.api_success(**response), 200
+    return api_success(**response), 200

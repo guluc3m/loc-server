@@ -5,8 +5,10 @@
 from flask import Blueprint, abort, current_app, request
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import exists
-from loc import db, util
-from loc import messages as msg
+from loc import db
+from loc.lib import messages as msg
+from loc.lib.util import api_error, api_fail, api_success, \
+        generate_expiration_date, generate_token, hash_password
 from loc.models import User
 
 import datetime
@@ -44,10 +46,10 @@ def login():
         error['password'] = msg.FIELD_MISSING
 
     if error:
-        return util.api_fail(**error), 401
+        return api_fail(**error), 401
 
     # Check user record
-    hashed_password = util.hash_password(password)
+    hashed_password = hash_password(password)
 
     user = (
         User
@@ -57,16 +59,16 @@ def login():
 
     if not user or user.password != hashed_password:
         return (
-            util.api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
+            api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
             401
         )
 
     # Create JWT token
     if remember:
-        expire = util.generate_expiration_date(years=1)
+        expire = generate_expiration_date(years=1)
 
     else:
-        expire = util.generate_expiration_date(days=1)
+        expire = generate_expiration_date(days=1)
 
     encoded = jwt.encode(
         {
@@ -78,7 +80,7 @@ def login():
         algorithm=current_app.config['JWT_ALGORITHM']
     )
 
-    return util.api_success(jwt=encoded), 200
+    return api_success(jwt=encoded), 200
 
 
 @bp_session.route('/reset-password/<token>', methods=['POST'])
@@ -103,7 +105,7 @@ def reset_password(token):
     ).scalar()
 
     if not token_valid:
-        return util.api_fail(token=msg.INVALID_TOKEN), 404
+        return api_fail(token=msg.INVALID_TOKEN), 404
 
     # Update password
     received = request.get_json()
@@ -111,7 +113,7 @@ def reset_password(token):
     password = received.get('password')
 
     if not password:
-        return util.api_fail(password=msg.FIELD_MISSING), 404
+        return api_fail(password=msg.FIELD_MISSING), 404
 
     # Update user record
     user = (
@@ -121,9 +123,9 @@ def reset_password(token):
     ).first()
 
     if not user:
-        return util.api_fail(email=msg.USER_NOT_FOUND), 404
+        return api_fail(email=msg.USER_NOT_FOUND), 404
 
-    user.password = util.hash_password(password)
+    user.password = hash_password(password)
     user.password_reset_token = None
     user.token_expiration = None
 
@@ -142,7 +144,7 @@ def reset_password(token):
 
     #TODO send email
 
-    return util.api_success(), 200
+    return api_success(), 200
 
 
 @bp_session.route('/reset-password', methods=['POST'])
@@ -157,7 +159,7 @@ def send_reset_token():
     email = received.get('email')
 
     if not email:
-        return util.api_fail(email=msg.FIELD_MISSING), 404
+        return api_fail(email=msg.FIELD_MISSING), 404
 
     # Check user record
     user = (
@@ -167,16 +169,16 @@ def send_reset_token():
     ).first()
 
     if not user:
-        return util.api_fail(email=msg.USER_NOT_FOUND), 404
+        return api_fail(email=msg.USER_NOT_FOUND), 404
 
     # Generate token
-    token = util.generate_token()
+    token = generate_token()
 
     while User.query(exists().where(User.password_reset_token==token)).scalar():
-        token = util.generate_token()
+        token = generate_token()
 
     user.password_reset_token = token
-    user.token_expiration = util.generate_expiration_date(days=1)
+    user.token_expiration = generate_expiration_date(days=1)
 
     try:
         correct = True
@@ -193,7 +195,7 @@ def send_reset_token():
 
     #TODO send email
 
-    return util.api_success(), 200
+    return api_success(), 200
 
 
 @bp_session.route('/signup', methods=['POST'])
@@ -226,7 +228,7 @@ def signup():
 
     if error:
         #TODO check status code
-        return util.api_fail(**error), 409
+        return api_fail(**error), 409
 
     # Check user record
     user_exists = (
@@ -240,13 +242,13 @@ def signup():
 
     if user_exists:
         #TODO check status code
-        return util.api_error(msg.USER_EXISTS), 409
+        return api_error(msg.USER_EXISTS), 409
 
     # Create user
     new_user = User()
     new_user.username = username
     new_user.email = email
-    new_user.password = util.hash_password(password)
+    new_user.password = hash_password(password)
 
     try:
         correct = True
@@ -262,4 +264,4 @@ def signup():
             db.session.rollback()
             abort(500)
 
-    return util.api_success(username=username), 201
+    return api_success(username=username), 201
