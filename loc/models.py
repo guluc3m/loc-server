@@ -3,6 +3,7 @@
 """SQLalchemy model declarations."""
 
 from loc import db
+from sqlalchemy.ext.associationproxy import association_proxy
 
 class Friend(db.Model):
     """Accepted friend requests.
@@ -15,15 +16,23 @@ class Friend(db.Model):
     """
     __tablename__ = 'friends'
 
-    user_id1 = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    user_id2 = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    user_id1 = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        primary_key=True
+    )
+    user_id2 = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        primary_key=True
+    )
 
     # Relationships
-    user1 = db.relationship('User', foreign_keys=[user_id1])
-    user2 = db.relationship('User', foreign_keys=[user_id2])
+    # user1 = db.relationship('User', foreign_keys=[user_id1])
+    # user2 = db.relationship('User', foreign_keys=[user_id2])
 
 
-class FriendInvite(db.Model):
+class FriendRequest(db.Model):
     """Pending friend invitations.
 
     Attributes:
@@ -32,21 +41,21 @@ class FriendInvite(db.Model):
         receiver_id (int): ID of the receiver.
         token (str): Unique token used to accept the invitation.
     """
-    __tablename__ = 'friend_invites'
+    __tablename__ = 'friend_requests'
 
     id = db.Column(db.Integer, primary_key=True)
 
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     token = db.Column(db.String(64), nullable=False, unique=True)
 
     # Relationships
-    sender = db.relationship('User', foreign_keys=[sender_id])
-    receiver = db.relationship('User', foreign_keys=[receiver_id])
+    # sender = db.relationship('User', foreign_keys=[sender_id])
+    # receiver = db.relationship('User', foreign_keys=[receiver_id])
 
     # Constraints
-    __table_args__ = (db.UniqueConstraint('sender_id', 'receiver_id'))
+    __table_args__ = (db.UniqueConstraint('sender_id', 'receiver_id'),)
 
 
 class Match(db.Model):
@@ -100,6 +109,18 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
 
+    @staticmethod
+    def get_role(name):
+        """Obtain an already existing role by name.
+
+        Args:
+            name(str): Unique name of the role.
+
+        Returns:
+            `Role` instance or `None` if not found
+        """
+        return Role.query.filter_by(name=name).first()
+
 
 class Submission(db.Model):
     """Team submission for a specific match
@@ -118,10 +139,10 @@ class Submission(db.Model):
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=False)
     url = db.Column(db.String(255), nullable=False)
-    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
 
     # Relationships
-    team = db.relationship('Team')
+    # team = db.relationship('Team')
 
 
 class Team(db.Model):
@@ -139,18 +160,21 @@ class Team(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    match_id = db.Column(db.Integer, db.ForeignKey('match.id'))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
     num_members = db.Column(db.Integer, nullable=False, default=1)
     is_participating = db.Column(db.Boolean, nullable=False, default=False)
     is_winner = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relationships
-    owner = db.relationship('User')
-    match = db.relationship('Match')
+    invites = db.relationship('TeamInvite', backref='team', lazy='dynamic')
+    submission = db.relationship('Submission', backref='team', lazy='dynamic')
+    # members = db.relationship('User')
+    # owner = db.relationship('User')
+    # match = db.relationship('Match')
 
     # Constraints
-    __table_args__ = (db.UniqueConstraint('owner_id', 'match_id'))
+    __table_args__ = (db.UniqueConstraint('owner_id', 'match_id'), )
 
 
 class TeamInvite(db.Model):
@@ -166,17 +190,17 @@ class TeamInvite(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     token = db.Column(db.String(64), nullable=False, unique=True)
 
     # Relationships
-    team = db.relationship('Team')
-    user = db.relationship('User')
+    # team = db.relationship('Team')
+    # user = db.relationship('User')
 
     # Constraints
-    __table_args__ = (db.UniqueConstraint('team_id', 'user_id'))
+    __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
 
 
 class TeamMember(db.Model):
@@ -190,12 +214,12 @@ class TeamMember(db.Model):
     """
     __tablename__ = 'team_members'
 
-    team_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('match.id'), primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
 
     # Relationships
-    team = db.relationship('Team')
-    user = db.relationship('User')
+    # team = db.relationship('Team')
+    # user = db.relationship('User')
 
 
 class User(db.Model):
@@ -228,6 +252,67 @@ class User(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     delete_date = db.Column(db.DateTime)
 
+    # Relationships
+    _friends_sent = db.relationship(
+        'User',
+        secondary='friends',
+        primaryjoin='User.id==Friend.user_id1',
+        secondaryjoin='User.id==Friend.user_id2',
+        backref=db.backref('_friends_received', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
+    friend_requests_sent = db.relationship(
+        'User',
+        secondary='friend_requests',
+        primaryjoin='User.id==FriendRequest.sender_id',
+        secondaryjoin='User.id==FriendRequest.receiver_id',
+        backref=db.backref('friends_requests_received', lazy='dynamic'),
+        lazy='dynamic'
+    )
+
+    roles = db.relationship(
+        'Role',
+        secondary='user_roles',
+        backref=db.backref('users', lazy='dynamic'),
+        cascade='delete, save-update',
+        collection_class=set
+    )
+
+    _teams = db.relationship(
+        'Team',
+        secondary='team_members',
+        backref=db.backref('members', lazy='dynamic'),
+        lazy='dynamic',
+        collection_class=set
+    )
+
+    _teams_owner = db.relationship('Team', backref='owner', lazy='dynamic')
+
+    team_invites = db.relationship(
+        'Team',
+        secondary='team_invites',
+        backref=db.backref('invited_users', lazy='dynamic'),
+        lazy='dynamic',
+        collection_class=set
+    )
+
+    # Proxies
+    role_names = association_proxy(
+        'roles',
+        'name',
+        creator=lambda n: Role.get_role(n)
+    )
+
+    @property
+    def friends(self):
+        """Obtain friends (sent and received invitations)."""
+        return self._friends_sent.union(self._friends_received)
+
+    def teams(self):
+        """Obtain teams of which the user is owner or member."""
+        return self._teams.union(self._teams_owner)
+
 
 class UserRole(db.Model):
     """Roles assigned to a specific user.
@@ -238,9 +323,9 @@ class UserRole(db.Model):
     """
     __tablename__ = 'user_roles'
 
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), primary_key=True)
 
     # Relationships
-    user = db.relationship('User')
-    role = db.relationship('Role')
+    # user = db.relationship('User')
+    # role = db.relationship('Role')
