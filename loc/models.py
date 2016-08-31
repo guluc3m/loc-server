@@ -27,10 +27,6 @@ class Friend(db.Model):
         primary_key=True
     )
 
-    # Relationships
-    # user1 = db.relationship('User', foreign_keys=[user_id1])
-    # user2 = db.relationship('User', foreign_keys=[user_id2])
-
 
 class FriendRequest(db.Model):
     """Pending friend invitations.
@@ -49,10 +45,6 @@ class FriendRequest(db.Model):
     receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     token = db.Column(db.String(64), nullable=False, unique=True)
-
-    # Relationships
-    # sender = db.relationship('User', foreign_keys=[sender_id])
-    # receiver = db.relationship('User', foreign_keys=[receiver_id])
 
     # Constraints
     __table_args__ = (db.UniqueConstraint('sender_id', 'receiver_id'),)
@@ -141,9 +133,6 @@ class Submission(db.Model):
     url = db.Column(db.String(255), nullable=False)
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
 
-    # Relationships
-    # team = db.relationship('Team')
-
 
 class Team(db.Model):
     """Team participating in a match.
@@ -167,11 +156,7 @@ class Team(db.Model):
     is_winner = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relationships
-    invites = db.relationship('TeamInvite', backref='team', lazy='dynamic')
     submission = db.relationship('Submission', backref='team', lazy='dynamic')
-    # members = db.relationship('User')
-    # owner = db.relationship('User')
-    # match = db.relationship('Match')
 
     # Constraints
     __table_args__ = (db.UniqueConstraint('owner_id', 'match_id'), )
@@ -195,10 +180,6 @@ class TeamInvite(db.Model):
 
     token = db.Column(db.String(64), nullable=False, unique=True)
 
-    # Relationships
-    # team = db.relationship('Team')
-    # user = db.relationship('User')
-
     # Constraints
     __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
 
@@ -216,10 +197,6 @@ class TeamMember(db.Model):
 
     team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-
-    # Relationships
-    # team = db.relationship('Team')
-    # user = db.relationship('User')
 
 
 class User(db.Model):
@@ -325,7 +302,3 @@ class UserRole(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'), primary_key=True)
-
-    # Relationships
-    # user = db.relationship('User')
-    # role = db.relationship('Role')
