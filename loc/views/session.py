@@ -5,8 +5,9 @@
 from flask import Blueprint, abort, current_app, jsonify, request
 from sqlalchemy import or_
 from sqlalchemy.sql.expression import exists
-from loc.models import User
 from loc import db, util
+from loc import messages as msg
+from loc.models import User
 
 import datetime
 import jwt
@@ -35,8 +36,15 @@ def login():
     password = received.get('password')
     remember = received.get('remember_me', False)
 
-    if not username or not password:
-        abort(401)
+    error = {}
+
+    if not username:
+        error['username'] = msg.FIELD_MISSING
+    if not password:
+        error['password'] = msg.FIELD_MISSING
+
+    if error:
+        return util.api_fail(**error), 401
 
     # Check user record
     hashed_password = util.hash_password(password)
@@ -48,7 +56,10 @@ def login():
     ).first()
 
     if not user or user.password != hashed_password:
-        abort(401)
+        return (
+            util.api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
+            401
+        )
 
     # Create JWT token
     if remember:
@@ -81,7 +92,7 @@ def send_reset_token():
     email = received.get('email')
 
     if not email:
-        abort(404)
+        return util.api_fail(email=msg.FIELD_MISSING), 404
 
     # Check user record
     user = (
@@ -91,7 +102,7 @@ def send_reset_token():
     ).first()
 
     if not user:
-        abort(404)
+        return util.api_fail(email=msg.USER_NOT_FOUND), 404
 
     # Generate token
     token = util.generate_token()
@@ -141,8 +152,18 @@ def signup():
     email = received.get('email')
     password = received.get('password')
 
-    if not username or not email or not password:
-        abort(409)
+    error = {}
+
+    if not username:
+        error['username'] = msg.FIELD_MISSING
+    if not email:
+        error['email'] = msg.FIELD_MISSING
+    if not password:
+        error['password'] = msg.FIELD_MISSING
+
+    if error:
+        #TODO check status code
+        return util.api_fail(**error), 409
 
     # Check user record
     user_exists = (
@@ -155,7 +176,8 @@ def signup():
     ).scalar()
 
     if user_exists:
-        abort(409)
+        #TODO check status code
+        return util.api_error(msg.USER_EXISTS), 409
 
     # Create user
     new_user = User()

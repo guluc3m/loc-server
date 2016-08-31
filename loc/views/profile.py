@@ -3,9 +3,10 @@
 """Management of user profile."""
 
 from flask import Blueprint, abort, jsonify, request
+from loc import db, util
+from loc import messages as msg
 from loc.deco import login_required
 from loc.models import User
-from loc import db, util
 
 
 bp_profile = Blueprint('profile', __name__)
@@ -19,7 +20,7 @@ def show_profile():
     user = util.user_from_jwt(jwt_token)
 
     if not user:
-        abort(404)
+        return util.api_error(msg.USER_NOT_FOUND), 404
 
     response = {
         'username': user.username,
@@ -27,7 +28,7 @@ def show_profile():
         'score': user.score
     }
 
-    return jsonify(**response)
+    return jsonify(**response), 200
 
 @bp_profile.route('/profile/edit', methods=['GET','POST'])
 @login_required
@@ -43,7 +44,7 @@ def update_profile():
     user = util.user_from_jwt(received.get('token'))
 
     if not user:
-        abort(404)
+        return util.api_error(msg.USER_NOT_FOUND), 404
 
     if request.method == 'GET':
         # Get information that can be edited
@@ -80,4 +81,4 @@ def update_profile():
         'email': user.email
     }
 
-    return jsonify(**response)
+    return jsonify(**response), 200

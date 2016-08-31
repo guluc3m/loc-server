@@ -5,8 +5,8 @@
 from flask import abort, current_app, jsonify, request
 from functools import wraps
 from werkzeug.exceptions import BadRequest
-from loc import messages as msg
 from loc import util
+from loc import messages as msg
 from loc.models import Role, User, UserRole
 
 import jwt
