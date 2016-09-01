@@ -133,6 +133,9 @@ class Match(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     delete_date = db.Column(db.DateTime)
 
+    # Relationships
+    teams = db.relationship('Team', backref='match', lazy='dynamic')
+
 
 class Role(db.Model):
     """Special roles recognized in the platform
