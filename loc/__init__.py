@@ -4,16 +4,31 @@
 
 from flask import Flask
 from flask_mail import Mail
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from loc.helper.extra import make_celery
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
-db = SQLAlchemy(app)
+import os
 
-# Register models
+app = Flask(__name__, instance_relative_config=True)
+
+# Load configuration specified in environment variable or default
+# development one
+# Production configurations shold be stored in `instance/` (ignored in repo)
+if 'LOC_CONFIG_FILE' in os.environ:
+    app.config.from_envvar('LOC_CONFIG_FILE')
+
+else:
+    app.config.from_object('config.development')
+
+
+# Setup database
+db = SQLAlchemy(app)
+# Force model registration
 from loc import models
-db.create_all()
+
+# Database migrations
+migrate = Migrate(app, db)
 
 
 # Setup Flask-Mail
