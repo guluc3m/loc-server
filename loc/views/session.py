@@ -4,7 +4,6 @@
 
 from flask import Blueprint, abort, current_app, request
 from sqlalchemy import or_
-from sqlalchemy.sql.expression import exists
 from loc import db
 from loc.helper import messages as msg
 from loc.helper.util import api_error, api_fail, api_success, \
@@ -172,7 +171,13 @@ def send_reset_token():
     # Generate token
     token = generate_token()
 
-    while User.query(exists().where(User.password_reset_token==token)).scalar():
+    while db.session.query(
+            User
+            .query
+            .filter(User.password_reset_token==token)
+            .exists()
+            ).scalar():
+
         token = generate_token()
 
     user.password_reset_token = token
@@ -229,13 +234,15 @@ def signup():
         return api_fail(**error), 409
 
     # Check user record
-    user_exists = (
+    user_exists = db.session.query(
         User
-        .query(or_(
-            exists().where(User.username==username),
-            exists().where(User.email==email)
-        ))
-
+        .query
+        .filter(
+            or_(
+                User.username==username,
+                User.email==email
+            )
+        ).exists()
     ).scalar()
 
     if user_exists:
