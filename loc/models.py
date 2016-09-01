@@ -50,6 +50,54 @@ class FriendRequest(db.Model):
     __table_args__ = (db.UniqueConstraint('sender_id', 'receiver_id'),)
 
 
+class Loadout(db.Model):
+    """Team template.
+
+    Loadouts are lists of users that can be used to automatically create a
+    team for a specific match.
+
+    Attributes:
+        id (int): Unique ID of the record.
+        name (str): Name of the loadout.
+        owner_id (int): ID of the owner.
+    """
+    __tablename__ = 'loadouts'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    name = db.Column(db.String(128), nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # Relationships
+    members = db.relationship(
+        'User',
+        secondary='loadout_members',
+        lazy='dynamic',
+        collection_class=set
+    )
+
+    # Constraints
+    __table_args__ = (db.UniqueConstraint('name', 'owner_id'),)
+
+
+class LoadoutMember(db.Model):
+    """Members in a specific loadout.
+
+    Attributes:
+        loadout_id (int): ID of the loadout.
+        user_id (int): ID of the user/member.
+    """
+    __tablename__ = 'loadout_members'
+
+    loadout_id = db.Column(
+        db.Integer,
+        db.ForeignKey('loadouts.id'),
+        primary_key=True
+    )
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+
+
 class Match(db.Model):
     """Development matches.
 
@@ -249,6 +297,8 @@ class User(db.Model):
         backref=db.backref('friends_requests_received', lazy='dynamic'),
         lazy='dynamic'
     )
+
+    loadouts = db.relationship('Loadout', backref='owner', lazy='dynamic')
 
     roles = db.relationship(
         'Role',
