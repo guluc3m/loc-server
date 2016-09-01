@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+
+"""Utility functions."""
+
 from flask import jsonify, current_app
 from loc.models import User
 
+import bcrypt
 import datetime
 import jwt
 
@@ -76,8 +81,25 @@ def generate_token(length=32):
 
     return token
 
+def hash_matches(password, hashed):
+    """Check a password against a hash.
+
+    Uses bcrypt algorithm.
+
+    Args:
+        password (str): Original password.
+        hashed (str): Hashed password.
+
+    Returns:
+        `True` or `False`
+    """
+    # Bcrypt works with bytes
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
 def hash_password(password):
-    """Hash the provided password using a specific algorithm.
+    """Hash the provided password.
+
+    Uses bcrypt algorithm.
 
     Args:
         password (str): Plaintext password.
@@ -85,8 +107,13 @@ def hash_password(password):
     Returns:
         Hashed password.
     """
-    #TODO
-    return password
+    # Bcrypt works with bytes
+    rounds = current_app.config.get('BCRYPT_ROUNDS', 12)
+
+    return bcrypt.hashpw(
+        password.encode(),
+        bcrypt.gensalt(rounds=rounds)
+    ).decode()
 
 def user_from_jwt(token):
     """Obtain user record from JWT token.

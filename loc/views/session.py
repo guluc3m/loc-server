@@ -8,7 +8,7 @@ from sqlalchemy.sql.expression import exists
 from loc import db
 from loc.helper import messages as msg
 from loc.helper.util import api_error, api_fail, api_success, \
-        generate_expiration_date, generate_token, hash_password
+        generate_expiration_date, generate_token, hash_matches, hash_password
 from loc.models import User
 
 import datetime
@@ -49,15 +49,13 @@ def login():
         return api_fail(**error), 401
 
     # Check user record
-    hashed_password = hash_password(password)
-
     user = (
         User
         .query
         .filter_by(username=username)
     ).first()
 
-    if not user or user.password != hashed_password:
+    if not user or hash_matches(password, user.password):
         return (
             api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
             401
