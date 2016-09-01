@@ -113,6 +113,7 @@ class Match(db.Model):
             accepted after this date.
         min_team (int): Minimum number of users in a team.
         max_team (int): Maximum number of users in a team.
+        slug (str): Unique slug generated from the title of the match.
         is_visible (bool): Whether or not this match should be shown publicly.
         is_deleted (bool): Whether or not the record has been deleted.
         delete_date (date): Date in which the record was deleted.
@@ -128,6 +129,7 @@ class Match(db.Model):
     end_date = db.Column(db.DateTime, nullable=False)
     min_team = db.Column(db.Integer, nullable=False, default=1)
     max_team = db.Column(db.Integer, nullable=False, default=1)
+    slug = db.Column(db.String(128), nullable=False, unique=True)
     is_visible = db.Column(db.Boolean, nullable=False, default=False)
 
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
@@ -193,9 +195,11 @@ class Team(db.Model):
         owner_id (int): ID of the user that created the team.
         match_id (int): ID of the match.
         num_members (int): Total number of members in the team.
+        position (int): Position in which the team finished. When there is a
+            value of -1, the match has not finished or the team has been
+            disqualified.
         is_participating (bool): Whether all members have accepted or not.
         is_disqualified (bool): Whether the team is disqualified or not.
-        is_winner (bool): Whether the team has won or not.
     """
     __tablename__ = 'teams'
 
@@ -204,9 +208,9 @@ class Team(db.Model):
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
     num_members = db.Column(db.Integer, nullable=False, default=1)
+    position = db.Column(db.Integer, nullable=False, default=-1)
     is_participating = db.Column(db.Boolean, nullable=False, default=False)
     is_disqualified = db.Column(db.Boolean, nullable=False, default=False)
-    is_winner = db.Column(db.Boolean, nullable=False, default=False)
 
     # Relationships
     submission = db.relationship('Submission', backref='team', lazy='dynamic')
