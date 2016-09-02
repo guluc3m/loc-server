@@ -12,6 +12,43 @@ from loc.helper.util import api_error, api_success, user_from_jwt
 bp_profile = Blueprint('profile', __name__)
 
 
+
+@bp_profile.route('/profile/followers')
+@login_required
+def followers():
+    """Obtain a list of followers."""
+    jwt_token = request.get_json().get('token')
+    user = user_from_jwt(jwt_token)
+
+    if not user:
+        return api_error(msg.USER_NOT_FOUND), 404
+
+    response = []
+
+    for f in user.followers:
+        response.append(f.username)
+
+    return api_success(followers=response), 200
+
+
+@bp_profile.route('/profile/following')
+@login_required
+def following():
+    """Obtain a list of users being followed."""
+    jwt_token = request.get_json().get('token')
+    user = user_from_jwt(jwt_token)
+
+    if not user:
+        return api_error(msg.USER_NOT_FOUND), 404
+
+    response = []
+
+    for f in user.following:
+        response.append(f.username)
+
+    return api_success(following=response), 200
+
+
 @bp_profile.route('/profile')
 @login_required
 def show_profile():
