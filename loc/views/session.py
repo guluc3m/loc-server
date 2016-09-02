@@ -55,7 +55,7 @@ def login():
         .filter_by(username=username)
     ).first()
 
-    if not user or hash_matches(password, user.password):
+    if not user or not hash_matches(password, user.password):
         return (
             api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
             401
@@ -77,7 +77,7 @@ def login():
         },
         current_app.config['SECRET_KEY'],
         algorithm=current_app.config['JWT_ALGORITHM']
-    )
+    ).decode()
 
     return api_success(jwt=encoded), 200
 

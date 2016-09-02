@@ -37,3 +37,13 @@ mail = Mail(app)
 
 # Setup Celery
 celery = make_celery(app)
+
+
+# Blueprints
+from loc.views.profile import bp_profile
+from loc.views.session import bp_session
+from loc.views.user import bp_user
+
+app.register_blueprint(bp_profile)
+app.register_blueprint(bp_session)
+app.register_blueprint(bp_user)

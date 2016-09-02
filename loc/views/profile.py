@@ -61,7 +61,6 @@ def show_profile():
 
     response = {
         'username': user.username,
-        'name': user.name,
         'score': user.score
     }
 
@@ -87,7 +86,6 @@ def update_profile():
     if request.method == 'GET':
         # Get information that can be edited
         response = {
-            'name': user.name,
             'email': user.email
         }
 
@@ -114,7 +112,6 @@ def update_profile():
             abort(500)
 
     response = {
-        'name': user.name,
         'email': user.email
     }
 

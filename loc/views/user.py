@@ -87,14 +87,13 @@ def show_user(username):
 
     response = {
         'username': user.username,
-        'name': user.name,
         'score': user.score
     }
 
     return api_success(**response), 200
 
 
-@bp_user.route('/users/<username>/matches', methods=['POST'])
+@bp_user.route('/users/<username>/matches')
 def show_user_matches(username):
     """Obtain a list of matches in which the user has participated.
 

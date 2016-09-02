@@ -2,6 +2,9 @@ SQLALCHEMY_DATABASE_URI = "sqlite:////tmp/test.db"
 SECRET_KEY = "potato"
 DEBUG = True
 
+# JWT
+JWT_ALGORITHM = "HS512"
+
 # Flask-Mail
 MAIL_SERVER = ""
 MAIL_PORT = 465

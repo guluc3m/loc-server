@@ -232,7 +232,7 @@ class User(db.Model):
     username = db.Column(db.String(64), nullable=False, unique=True)
     email = db.Column(db.String(255), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    score = db.Column(db.Integer)
+    score = db.Column(db.Integer, nullable=False, default=0)
 
     password_reset_token = db.Column(db.String(64))
     token_expiration = db.Column(db.DateTime)
