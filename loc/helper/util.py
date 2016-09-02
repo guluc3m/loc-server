@@ -3,6 +3,7 @@
 """Utility functions."""
 
 from flask import jsonify, current_app
+from loc import db
 from loc.models import User
 
 import bcrypt
@@ -114,6 +115,21 @@ def hash_password(password):
         password.encode(),
         bcrypt.gensalt(rounds=rounds)
     ).decode()
+
+def record_exists(model, **kwargs):
+    """Check if a record exists using a simple filter.
+
+    Kwargs are used to create the filter.
+
+    Args:
+        model (Model): Database model to query.
+    """
+    return db.session.query(
+        model
+        .query
+        .filter_by(**kwargs)
+        .exists()
+    ).scalar()
 
 def user_from_jwt(token):
     """Obtain user record from JWT token.

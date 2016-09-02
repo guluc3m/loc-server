@@ -15,7 +15,7 @@ bp_profile = Blueprint('profile', __name__)
 @bp_profile.route('/profile')
 @login_required
 def show_profile():
-    """Show currently logged in user's profile."""
+    """Obtain logged in user's profile."""
     jwt_token = request.get_json().get('token')
     user = user_from_jwt(jwt_token)
 
@@ -59,7 +59,6 @@ def update_profile():
     # Update information
     name = received.get('name', '')
     email = received.get('email')
-
 
     user.name = name
     user.email = email

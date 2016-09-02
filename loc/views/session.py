@@ -7,7 +7,8 @@ from sqlalchemy import or_
 from loc import db
 from loc.helper import messages as msg
 from loc.helper.util import api_error, api_fail, api_success, \
-        generate_expiration_date, generate_token, hash_matches, hash_password
+        generate_expiration_date, generate_token, hash_matches, \
+        hash_password, record_exists
 from loc.models import User
 
 import datetime
@@ -172,13 +173,7 @@ def send_reset_token():
     # Generate token
     token = generate_token()
 
-    while db.session.query(
-            User
-            .query
-            .filter(User.password_reset_token==token)
-            .exists()
-            ).scalar():
-
+    while record_exists(User, password_reset_token=token):
         token = generate_token()
 
     user.password_reset_token = token
