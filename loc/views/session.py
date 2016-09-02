@@ -2,7 +2,7 @@
 
 """Management of user sessions."""
 
-from flask import Blueprint, abort, current_app, request
+from flask import Blueprint, current_app, request
 from sqlalchemy import or_
 from loc import db
 from loc.helper import messages as msg
@@ -139,7 +139,7 @@ def reset_password(token):
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_UPDATE_ERROR), 500
 
     #TODO send email
 
@@ -190,7 +190,7 @@ def send_reset_token():
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_UPDATE_ERROR), 500
 
     #TODO send email
 
@@ -263,6 +263,6 @@ def signup():
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_CREATE_ERROR), 500
 
     return api_success(username=username), 201

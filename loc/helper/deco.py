@@ -2,7 +2,7 @@
 
 """Decorator functions."""
 
-from flask import abort, current_app, jsonify, request
+from flask import current_app, jsonify, request
 from functools import wraps
 from werkzeug.exceptions import BadRequest
 from loc.helper import util
@@ -24,7 +24,7 @@ def login_required(f):
 
         except BadRequest as e:
             # TODO log except
-            abort(500)
+            return util.api_error(msg.JWT_MISSING), 500
 
         if not jwt_token:
             return util.api_fail(token=msg.JWT_MISSING), 401
@@ -32,6 +32,10 @@ def login_required(f):
         # Decode
         try:
             decoded = jwt.decode(jwt_token, current_app.config['SECRET_KEY'])
+
+        except jwt.exceptions.DecodeError:
+            # TODO log
+            return util.api_error(msg.JWT_ERROR), 500
 
         except jwt.ExpiredSignatureError:
             #TODO log
@@ -67,7 +71,7 @@ def role_required(role):
 
             except BadRequest as e:
                 # TODO log except
-                abort(500)
+                return util.api_error(msg.JWT_MISSING), 500
 
             if not jwt_token:
                 return util.api_fail(token=msg.JWT_MISSING), 401
@@ -75,6 +79,10 @@ def role_required(role):
             # Decode
             try:
                 decoded = jwt.decode(jwt_token, current_app.config['SECRET_KEY'])
+
+            except jwt.exceptions.DecodeError:
+                # TODO log
+                return util.api_error(msg.JWT_ERROR), 500
 
             except jwt.ExpiredSignatureError:
                 #TODO log

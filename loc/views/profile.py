@@ -2,7 +2,7 @@
 
 """Management of user profile."""
 
-from flask import Blueprint, abort, request
+from flask import Blueprint, request
 from loc import db
 from loc.helper import messages as msg
 from loc.helper.deco import login_required
@@ -109,7 +109,7 @@ def update_profile():
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_UPDATE_ERROR), 500
 
     response = {
         'email': user.email

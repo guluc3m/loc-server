@@ -2,7 +2,7 @@
 
 """Public information of users."""
 
-from flask import Blueprint, abort, request
+from flask import Blueprint, request
 from loc import db
 from loc.helper import messages as msg
 from loc.helper.deco import login_required
@@ -64,7 +64,7 @@ def follow_user(username):
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_CREATE_ERROR), 500
 
     return api_success(username=msg.FOLLOW_OK), 200
 
@@ -148,6 +148,6 @@ def unfollow_user(username):
     finally:
         if not correct:
             db.session.rollback()
-            abort(500)
+            return api_error(msg.RECORD_DELETE_ERROR), 500
 
     return api_success(username=msg.UNFOLLOW_OK), 200
