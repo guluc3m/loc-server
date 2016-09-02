@@ -5,49 +5,25 @@
 from loc import db
 from sqlalchemy.ext.associationproxy import association_proxy
 
-class Friend(db.Model):
-    """Accepted friend requests.
-
-    These records are bi-directional.
+class Follower(db.Model):
+    """User followers.
 
     Attributes:
-        user_id1 (int): Unique ID of user 1.
-        user_id2 (int): Unique ID of user 2.
+        follower_id (int): Unique ID of user that is following.
+        following_id (int): Unique ID of user that is being followed
     """
-    __tablename__ = 'friends'
+    __tablename__ = 'followers'
 
-    user_id1 = db.Column(
+    follower_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id'),
         primary_key=True
     )
-    user_id2 = db.Column(
+    following_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id'),
         primary_key=True
     )
-
-
-class FriendRequest(db.Model):
-    """Pending friend invitations.
-
-    Attributes:
-        id (int): Unique ID of the record.
-        sender_id (int): ID of the sender.
-        receiver_id (int): ID of the receiver.
-        token (str): Unique token used to accept the invitation.
-    """
-    __tablename__ = 'friend_requests'
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    sender_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    receiver_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-    token = db.Column(db.String(64), nullable=False, unique=True)
-
-    # Constraints
-    __table_args__ = (db.UniqueConstraint('sender_id', 'receiver_id'),)
 
 
 class Loadout(db.Model):
@@ -194,7 +170,7 @@ class Team(db.Model):
         id (int): Unique ID of the record.
         owner_id (int): ID of the user that created the team.
         match_id (int): ID of the match.
-        num_members (int): Total number of members in the team.
+        invite_token (str): Unique token used to join the team.
         position (int): Position in which the team finished. When there is a
             value of -1, the match has not finished or the team has been
             disqualified.
@@ -207,7 +183,7 @@ class Team(db.Model):
 
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
-    num_members = db.Column(db.Integer, nullable=False, default=1)
+    invite_token = db.Column(db.String(64), nullable=False, unique=True)
     position = db.Column(db.Integer, nullable=False, default=-1)
     is_participating = db.Column(db.Boolean, nullable=False, default=False)
     is_disqualified = db.Column(db.Boolean, nullable=False, default=False)
@@ -219,32 +195,10 @@ class Team(db.Model):
     __table_args__ = (db.UniqueConstraint('owner_id', 'match_id'), )
 
 
-class TeamInvite(db.Model):
-    """Pending team invitations.
-
-    Attributes:
-        id (int): Unique ID of the record.
-        team_id (int): ID of the team.
-        user_id (int): ID of the invited user.
-        token (str): Unique token used to accept the invite.
-    """
-    __tablename__ = 'team_invites'
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-    token = db.Column(db.String(64), nullable=False, unique=True)
-
-    # Constraints
-    __table_args__ = (db.UniqueConstraint('team_id', 'user_id'),)
-
-
 class TeamMember(db.Model):
     """Member of a team.
 
-    These records are only created when users accept team invitations.
+    These records created when users join teams through invitations.
 
     Attributes:
         team_id (int): ID of the team.
@@ -287,21 +241,12 @@ class User(db.Model):
     delete_date = db.Column(db.DateTime)
 
     # Relationships
-    _friends_sent = db.relationship(
+    following = db.relationship(
         'User',
-        secondary='friends',
-        primaryjoin='User.id==Friend.user_id1',
-        secondaryjoin='User.id==Friend.user_id2',
-        backref=db.backref('_friends_received', lazy='dynamic'),
-        lazy='dynamic'
-    )
-
-    friend_requests_sent = db.relationship(
-        'User',
-        secondary='friend_requests',
-        primaryjoin='User.id==FriendRequest.sender_id',
-        secondaryjoin='User.id==FriendRequest.receiver_id',
-        backref=db.backref('friends_requests_received', lazy='dynamic'),
+        secondary='followers',
+        primaryjoin='User.id==Follower.follower_id',
+        secondaryjoin='User.id==Follower.following_id',
+        backref=db.backref('followers', lazy='dynamic'),
         lazy='dynamic'
     )
 
@@ -315,7 +260,7 @@ class User(db.Model):
         collection_class=set
     )
 
-    _teams = db.relationship(
+    teams = db.relationship(
         'Team',
         secondary='team_members',
         backref=db.backref('members', lazy='dynamic'),
@@ -323,15 +268,7 @@ class User(db.Model):
         collection_class=set
     )
 
-    _teams_owner = db.relationship('Team', backref='owner', lazy='dynamic')
-
-    team_invites = db.relationship(
-        'Team',
-        secondary='team_invites',
-        backref=db.backref('invited_users', lazy='dynamic'),
-        lazy='dynamic',
-        collection_class=set
-    )
+    teams_owner = db.relationship('Team', backref='owner', lazy='dynamic')
 
     # Proxies
     role_names = association_proxy(
@@ -339,16 +276,6 @@ class User(db.Model):
         'name',
         creator=lambda n: Role.get_role(n)
     )
-
-    @property
-    def friends(self):
-        """Obtain friends (sent and received invitations)."""
-        return self._friends_sent.union(self._friends_received)
-
-    @property
-    def teams(self):
-        """Obtain teams of which the user is owner or member."""
-        return self._teams.union(self._teams_owner)
 
 
 class UserRole(db.Model):
