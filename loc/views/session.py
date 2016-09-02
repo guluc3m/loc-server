@@ -71,6 +71,7 @@ def login():
         {
             'sub': user.id,
             'iat': datetime.datetime.utcnow(),
+            'rol': list(user.role_names),
             'exp': expire
         },
         current_app.config['SECRET_KEY'],
