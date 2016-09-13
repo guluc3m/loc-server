@@ -4,7 +4,7 @@
 
 from flask import Blueprint, request
 from loc import db
-from loc.helper import messages as msg
+from loc.helper import messages as m
 from loc.helper.deco import login_required
 from loc.helper.util import api_error, api_fail, api_success, \
         record_exists, user_from_jwt
@@ -26,7 +26,7 @@ def follow_user(username):
     user = user_from_jwt(jwt_token)
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     to_follow = (
         User
@@ -35,7 +35,7 @@ def follow_user(username):
     ).first()
 
     if not to_follow:
-        return api_fail(username=msg.USER_NOT_FOUND), 404
+        return api_fail(username=m.USER_NOT_FOUND), 404
 
     # Check if already following
     is_following = record_exists(
@@ -45,7 +45,7 @@ def follow_user(username):
     )
 
     if is_following:
-        return api_fail(username=msg.ALREADY_FOLLOWING), 409
+        return api_fail(username=m.ALREADY_FOLLOWING), 409
 
     # Create relationship
     new_follow = Follower()
@@ -64,9 +64,9 @@ def follow_user(username):
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_CREATE_ERROR), 500
+            return api_error(m.RECORD_CREATE_ERROR), 500
 
-    return api_success(username=msg.FOLLOW_OK), 200
+    return api_success(username=m.FOLLOW_OK), 200
 
 
 @bp_user.route('/users/<username>')
@@ -83,7 +83,7 @@ def show_user(username):
     ).first()
 
     if not user:
-        return api_fail(username=msg.USER_NOT_FOUND), 404
+        return api_fail(username=m.USER_NOT_FOUND), 404
 
     response = {
         'username': user.username,
@@ -115,7 +115,7 @@ def unfollow_user(username):
     user = user_from_jwt(jwt_token)
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     to_unfollow = (
         User
@@ -124,7 +124,7 @@ def unfollow_user(username):
     ).first()
 
     if not to_unfollow:
-        return api_fail(username=msg.USER_NOT_FOUND), 404
+        return api_fail(username=m.USER_NOT_FOUND), 404
 
     # Check if not following
     follow_record = (
@@ -134,7 +134,7 @@ def unfollow_user(username):
     ).first()
 
     if not follow_record:
-        return api_fail(username=msg.NOT_FOLLOWING), 409
+        return api_fail(username=m.NOT_FOLLOWING), 409
 
     try:
         correct = True
@@ -148,6 +148,6 @@ def unfollow_user(username):
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_DELETE_ERROR), 500
+            return api_error(m.RECORD_DELETE_ERROR), 500
 
-    return api_success(username=msg.UNFOLLOW_OK), 200
+    return api_success(username=m.UNFOLLOW_OK), 200

@@ -5,7 +5,7 @@
 from flask import Blueprint, current_app, request
 from sqlalchemy import or_
 from loc import db
-from loc.helper import messages as msg
+from loc.helper import messages as m
 from loc.helper.util import api_error, api_fail, api_success, \
         generate_expiration_date, generate_token, hash_matches, \
         hash_password, record_exists
@@ -41,9 +41,9 @@ def login():
     error = {}
 
     if not username:
-        error['username'] = msg.FIELD_MISSING
+        error['username'] = m.FIELD_MISSING
     if not password:
-        error['password'] = msg.FIELD_MISSING
+        error['password'] = m.FIELD_MISSING
 
     if error:
         return api_fail(**error), 401
@@ -56,10 +56,7 @@ def login():
     ).first()
 
     if not user or not hash_matches(password, user.password):
-        return (
-            api_fail(username=msg.CHECK_DATA, password=msg.CHECK_DATA),
-            401
-        )
+        return api_fail(username=m.CHECK_DATA, password=m.CHECK_DATA), 401
 
     # Create JWT token
     if remember:
@@ -104,7 +101,7 @@ def reset_password(token):
     ).scalar()
 
     if not token_valid:
-        return api_fail(token=msg.INVALID_TOKEN), 404
+        return api_fail(token=m.INVALID_TOKEN), 404
 
     # Update password
     received = request.get_json()
@@ -112,7 +109,7 @@ def reset_password(token):
     password = received.get('password')
 
     if not password:
-        return api_fail(password=msg.FIELD_MISSING), 404
+        return api_fail(password=m.FIELD_MISSING), 404
 
     # Update user record
     user = (
@@ -122,7 +119,7 @@ def reset_password(token):
     ).first()
 
     if not user:
-        return api_fail(email=msg.USER_NOT_FOUND), 404
+        return api_fail(email=m.USER_NOT_FOUND), 404
 
     user.password = hash_password(password)
     user.password_reset_token = None
@@ -139,7 +136,7 @@ def reset_password(token):
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_UPDATE_ERROR), 500
+            return api_error(m.RECORD_UPDATE_ERROR), 500
 
     #TODO send email
 
@@ -158,7 +155,7 @@ def send_reset_token():
     email = received.get('email')
 
     if not email:
-        return api_fail(email=msg.FIELD_MISSING), 404
+        return api_fail(email=m.FIELD_MISSING), 404
 
     # Check user record
     user = (
@@ -168,7 +165,7 @@ def send_reset_token():
     ).first()
 
     if not user:
-        return api_fail(email=msg.USER_NOT_FOUND), 404
+        return api_fail(email=m.USER_NOT_FOUND), 404
 
     # Generate token
     token = generate_token()
@@ -190,7 +187,7 @@ def send_reset_token():
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_UPDATE_ERROR), 500
+            return api_error(m.RECORD_UPDATE_ERROR), 500
 
     #TODO send email
 
@@ -219,11 +216,11 @@ def signup():
     error = {}
 
     if not username:
-        error['username'] = msg.FIELD_MISSING
+        error['username'] = m.FIELD_MISSING
     if not email:
-        error['email'] = msg.FIELD_MISSING
+        error['email'] = m.FIELD_MISSING
     if not password:
-        error['password'] = msg.FIELD_MISSING
+        error['password'] = m.FIELD_MISSING
 
     if error:
         #TODO check status code
@@ -243,7 +240,7 @@ def signup():
 
     if user_exists:
         #TODO check status code
-        return api_error(msg.USER_EXISTS), 409
+        return api_error(m.USER_EXISTS), 409
 
     # Create user
     new_user = User()
@@ -263,6 +260,6 @@ def signup():
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_CREATE_ERROR), 500
+            return api_error(m.RECORD_CREATE_ERROR), 500
 
     return api_success(username=username), 201

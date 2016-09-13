@@ -3,6 +3,7 @@
 """Application bootstrap."""
 
 from flask import Flask
+from flask_babel import Babel
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
@@ -29,6 +30,10 @@ from loc import models
 
 # Database migrations
 migrate = Migrate(app, db)
+
+
+# Setup Flask-Babel
+babel = Babel(app)
 
 
 # Setup Flask-Mail

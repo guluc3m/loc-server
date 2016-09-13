@@ -4,7 +4,7 @@
 
 from flask import Blueprint, request
 from loc import db
-from loc.helper import messages as msg
+from loc.helper import messages as m
 from loc.helper.deco import login_required
 from loc.helper.util import api_error, api_success, user_from_jwt
 
@@ -21,7 +21,7 @@ def followers():
     user = user_from_jwt(jwt_token)
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     response = []
 
@@ -39,7 +39,7 @@ def following():
     user = user_from_jwt(jwt_token)
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     response = []
 
@@ -57,7 +57,7 @@ def show_profile():
     user = user_from_jwt(jwt_token)
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     response = {
         'username': user.username,
@@ -81,7 +81,7 @@ def update_profile():
     user = user_from_jwt(received.get('token'))
 
     if not user:
-        return api_error(msg.USER_NOT_FOUND), 404
+        return api_error(m.USER_NOT_FOUND), 404
 
     if request.method == 'GET':
         # Get information that can be edited
@@ -109,7 +109,7 @@ def update_profile():
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(msg.RECORD_UPDATE_ERROR), 500
+            return api_error(m.RECORD_UPDATE_ERROR), 500
 
     response = {
         'email': user.email

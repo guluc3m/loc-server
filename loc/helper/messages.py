@@ -2,19 +2,22 @@
 
 """Status messages."""
 
-ALREADY_FOLLOWING = 'ALREADY_FOLLOWING' # User is already following another user
-CHECK_DATA = 'CHECK_DATA' # The indicated field must be checked for errors
-JWT_ERROR = 'JWT_ERROR' # Error in the coding of the token
-JWT_EXPIRED = 'JWT_EXPIRED'
-JWT_MISSING = 'JWT_MISSING' # 'token' attribute is missing
-FIELD_MISSING = 'FIELD_MISSING' # Missing field in request
-FOLLOW_OK = 'FOLLOW_OK' # User is now following another user
-INVALID_TOKEN = 'INVALID_TOKEN' # Token is not found or has expired
-NOT_FOLLOWING = 'NOT_FOLLOWING' # User is not following another user
-RECORD_CREATE_ERROR = 'RECORD_CREATE_ERROR' # Error creating record
-RECORD_DELETE_ERROR = 'RECORD_DELETE_ERROR' # Error deleting record
-RECORD_UPDATE_ERROR = 'RECORD_UPDATE_ERROR' # Error updating record
-ROLE_MISSING = 'ROLE_MISSING' # User does not have required role
-UNFOLLOW_OK = 'UNFOLLOW_OK' # User stopped following another user
-USER_EXISTS = 'USER_EXISTS' # An user with specified details already exists
-USER_NOT_FOUND = 'USER_NOT_FOUND'
+from flask_babel import lazy_gettext as t
+
+
+ALREADY_FOLLOWING = t('Already following that user')
+CHECK_DATA = t('Check field for errors')
+JWT_ERROR = t('Error in JWT coding')
+JWT_EXPIRED = t('JWT has expired')
+JWT_MISSING = t('Request was missing the "token" attribute')
+FIELD_MISSING = t('Field was missing in request')
+FOLLOW_OK = t('Now following the user')
+INVALID_TOKEN = t('Token was not found or has expired')
+NOT_FOLLOWING = t('Not following the user')
+RECORD_CREATE_ERROR = t('Error creating record')
+RECORD_DELETE_ERROR = t('Error deleting record')
+RECORD_UPDATE_ERROR = t('Error updating record')
+ROLE_MISSING = t('Missing required role')
+UNFOLLOW_OK = t('Unfollowed the user')
+USER_EXISTS = t('An user with the specified details already exists')
+USER_NOT_FOUND = t('User was not found')
