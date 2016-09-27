@@ -14,13 +14,13 @@ from loc.models import Follower, User
 bp_user = Blueprint('user', __name__)
 
 
-@bp_user.route('/users/<username>/follow', methods=['POST'])
+@bp_user.route('/users/<username>/toggle-follow', methods=['POST'])
 @login_required
-def follow_user(username):
-    """Follow the specified user.
+def user_toggle_follow(username):
+    """Toggle following an user.
 
     Args:
-        username (str): Unique username.
+        username (str): Unique username of the user to (un)follow.
     """
     jwt_token = request.get_json().get('token')
     user = user_from_jwt(jwt_token)
@@ -28,33 +28,34 @@ def follow_user(username):
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
-    to_follow = (
+    if user.username == username:
+        # Cannot allow user to toggle their own follow record
+        return api_error(m.OP_NOT_PERMITTED), 403
+
+    # Check other user exists
+    user_toggled = (
         User
         .query
         .filter_by(username=username, is_deleted=False)
     ).first()
 
-    if not to_follow:
+    if not user_toggled:
         return api_fail(username=m.USER_NOT_FOUND), 404
 
-    # Check if already following
-    is_following = record_exists(
-        Follower,
-        follower_id=user.id,
-        following_id=to_follow.id
-    )
+    # Create/Delete record
+    follow_create = None
+    if user_toggled in user.following:
+        # Unfollow
+        user.following.remove(user_toggled)
+        follow_create = False
 
-    if is_following:
-        return api_fail(username=m.ALREADY_FOLLOWING), 409
-
-    # Create relationship
-    new_follow = Follower()
-    new_follow.follower_id = user.id
-    new_follow.following_id = to_follow.id
+    else:
+        # Follow
+        user.following.append(user_toggled)
+        follow_create = True
 
     try:
         correct = True
-        db.session.add(new_follow)
         db.session.commit()
 
     except Exception as e:
@@ -64,13 +65,26 @@ def follow_user(username):
     finally:
         if not correct:
             db.session.rollback()
-            return api_error(m.RECORD_CREATE_ERROR), 500
 
-    return api_success(username=m.FOLLOW_OK), 200
+            if follow_create:
+                # Following
+                return api_error(m.RECORD_CREATE_ERROR), 500
+
+            else:
+                # Unfollowing
+                return api_error(m.RECORD_DELETE_ERROR), 500
+
+    if follow_create:
+        # Following
+        return api_success(username=m.FOLLOW_OK), 200
+
+    else:
+        # Unfollowing
+        return api_success(username=m.UNFOLLOW_OK), 200
 
 
 @bp_user.route('/users/<username>')
-def show_user(username):
+def user_show(username):
     """Obtain public info for a specific user.
 
     Args:
@@ -94,60 +108,11 @@ def show_user(username):
 
 
 @bp_user.route('/users/<username>/matches')
-def show_user_matches(username):
+def user_matches(username):
     """Obtain a list of matches in which the user has participated.
 
     Args:
         username (str): Unique username
     """
     # TODO
-
-
-@bp_user.route('/users/<username>/unfollow', methods=['POST'])
-@login_required
-def unfollow_user(username):
-    """Unfollow the specified user.
-
-    Args:
-        username (str): Unique username.
-    """
-    jwt_token = request.get_json().get('token')
-    user = user_from_jwt(jwt_token)
-
-    if not user:
-        return api_error(m.USER_NOT_FOUND), 404
-
-    to_unfollow = (
-        User
-        .query
-        .filter_by(username=username, is_deleted=False)
-    ).first()
-
-    if not to_unfollow:
-        return api_fail(username=m.USER_NOT_FOUND), 404
-
-    # Check if not following
-    follow_record = (
-        Follower
-        .query
-        .filter_by(follower_id=user.id, following_id=to_unfollow.id)
-    ).first()
-
-    if not follow_record:
-        return api_fail(username=m.NOT_FOLLOWING), 409
-
-    try:
-        correct = True
-        db.session.delete(follow_record)
-        db.session.commit()
-
-    except Exception as e:
-        #TODO log error
-        correct = False
-
-    finally:
-        if not correct:
-            db.session.rollback()
-            return api_error(m.RECORD_DELETE_ERROR), 500
-
-    return api_success(username=m.UNFOLLOW_OK), 200
+    pass

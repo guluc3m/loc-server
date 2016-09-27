@@ -12,7 +12,6 @@ from loc.helper.util import api_error, api_success, user_from_jwt
 bp_profile = Blueprint('profile', __name__)
 
 
-
 @bp_profile.route('/profile/followers')
 @login_required
 def followers():
@@ -23,10 +22,7 @@ def followers():
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
-    response = []
-
-    for f in user.followers:
-        response.append(f.username)
+    response = [f.username for f in user.followers]
 
     return api_success(followers=response), 200
 
@@ -41,23 +37,32 @@ def following():
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
-    response = []
-
-    for f in user.following:
-        response.append(f.username)
+    response = [f.username for f in user.following]
 
     return api_success(following=response), 200
 
 
-@bp_profile.route('/profile')
+@bp_profile.route('/profile', methods=['GET', 'PUT'])
 @login_required
-def show_profile():
-    """Obtain logged in user's profile."""
-    jwt_token = request.get_json().get('token')
-    user = user_from_jwt(jwt_token)
+def profile_show():
+    """Obtain logged in user's profile or update it.
+
+    The GET request obtains information visible to the user and returns it in
+    a JSON object.
+
+    The PUT request is used to update the profile and returns a JSON object
+    with the updated information.
+    """
+    received = request.get_json()
+    user = user_from_jwt(received.get('token'))
 
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
+
+    if request.method == 'PUT':
+        # Update profile
+        return _profile_update(received, user)
+
 
     response = {
         'username': user.username,
@@ -67,30 +72,17 @@ def show_profile():
     return api_success(**response), 200
 
 
-@bp_profile.route('/profile/edit', methods=['GET','POST'])
-@login_required
-def update_profile():
-    """Update user profile.
+def _profile_update(received, user):
+    """Helper function to update user data.
 
-    When a GET request is received, returns current fields (and their values)
-    that can be edited.
+    Information that can be updated:
+        - name
+        - email
 
-    After update (POST request), returns updated information.
+    Args:
+        received (dict): Received JSON data
+        user (User): User record
     """
-    received = request.get_json()
-    user = user_from_jwt(received.get('token'))
-
-    if not user:
-        return api_error(m.USER_NOT_FOUND), 404
-
-    if request.method == 'GET':
-        # Get information that can be edited
-        response = {
-            'email': user.email
-        }
-
-        return api_success(**response), 200
-
     # Update information
     name = received.get('name', '')
     email = received.get('email')

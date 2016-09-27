@@ -115,6 +115,31 @@ class Match(db.Model):
     teams = db.relationship('Team', backref='match', lazy='dynamic')
 
 
+    def as_dict(self, include_long=False):
+        """Get record fields as a dictionary.
+
+        This is an utility method for use when creating a response.
+
+        Args:
+            include_long (bool): Include the long description (should be done
+                only if the match has started).
+
+        Returns:
+            dict with all the public attributes.
+        """
+        return {
+            'id': self.id,
+            'title': self.title,
+            'short_description': self.short_description,
+            'long_description': self.long_description if include_long else '',
+            'start_date': self.start_date,
+            'end_date': self.end_date,
+            'min_team': self.min_team,
+            'max_team': self.max_team,
+            'slug': self.slug
+        }
+
+
 class Role(db.Model):
     """Special roles recognized in the platform
 
