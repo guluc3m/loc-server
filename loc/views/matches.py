@@ -88,7 +88,7 @@ def match_create():
         slug=new_match.slug
     ), 201
 
-@bp_match.route('/matches', methods=['GET'])
+@bp_match.route('/matches')
 def match_list():
     """Obtain a list of matches.
 

@@ -42,27 +42,18 @@ def following():
     return api_success(following=response), 200
 
 
-@bp_profile.route('/profile', methods=['GET', 'PUT'])
+@bp_profile.route('/profile')
 @login_required
 def profile_show():
-    """Obtain logged in user's profile or update it.
+    """Obtain logged in user's profile.
 
-    The GET request obtains information visible to the user and returns it in
-    a JSON object.
-
-    The PUT request is used to update the profile and returns a JSON object
-    with the updated information.
+    This returns the information visible to the user.
     """
     received = request.get_json()
     user = user_from_jwt(received.get('token'))
 
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
-
-    if request.method == 'PUT':
-        # Update profile
-        return _profile_update(received, user)
-
 
     response = {
         'username': user.username,
@@ -72,17 +63,21 @@ def profile_show():
     return api_success(**response), 200
 
 
-def _profile_update(received, user):
-    """Helper function to update user data.
+@bp_profile.route('/profile', methods=['PUT'])
+@login_required
+def profile_update():
+    """Update user profile.
 
-    Information that can be updated:
-        - name
-        - email
-
-    Args:
-        received (dict): Received JSON data
-        user (User): User record
+    Params:
+        name (str)
+        email (email)
     """
+    received = request.get_json()
+    user = user_from_jwt(received.get('token'))
+
+    if not user:
+        return api_error(m.USER_NOT_FOUND), 404
+
     # Update information
     name = received.get('name', '')
     email = received.get('email')
