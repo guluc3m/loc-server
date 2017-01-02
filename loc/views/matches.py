@@ -56,7 +56,7 @@ def match_create():
     # Check if match already exists
     data['slug'] = received.get(
         'slug',
-        slugify.slugify(data['title'], to_lower=True, max_length=255)
+        slugify.slugify(data['title'], to_lower=True, max_length=128)
     )
 
     if record_exists(Match, slug=data['slug']):
@@ -87,6 +87,7 @@ def match_create():
         end_date=new_match.end_date,
         slug=new_match.slug
     ), 201
+
 
 @bp_match.route('/matches')
 def match_list():
@@ -122,11 +123,14 @@ def match_show(slug):
 
     The long description of the match is only returned if it has already
     started.
+
+    Args:
+        slug (str): Unique slug of the match
     """
     match = (
         Match
         .query
-        .filter_by(slug=slug)
+        .filter_by(slug=slug, is_visible=True, is_deleted=False)
     ).first()
 
     if not match:
@@ -136,3 +140,81 @@ def match_show(slug):
     has_started = datetime.datetime.now() >= match.start_date
 
     return api_success(**match.as_dict(has_started)), 200
+
+
+@bp_match.route('/matches/<slug>', methods=['PUT'])
+@role_required('admin')
+def match_update(slug):
+    """Modify the details of a match.
+
+    Args:
+        slug (str): Unique slug of the match
+
+    Params:
+        title (str)
+        short_description (str)
+        long_description (str)
+        start_date (date)
+        end_date (date)
+        min_team (int)
+        max_team (int)
+        slug (str), optional
+        is_visible (bool)
+    """
+    received = request.get_json()
+
+    match = (
+        Match
+        .query
+        .filter_by(slug=slug, is_deleted=False)
+    ).first()
+
+    if not match:
+        return api_error(m.MATCH_NOT_FOUND), 404
+
+    # Check new title and slug
+    title = received.get('title')
+    new_slug = received.get('slug')
+
+    if new_slug:
+        if record_exists(Match, slug=new_slug):
+            #TODO check status code
+            return api_error(m.MATCH_EXISTS), 409
+
+    elif title:
+        new_slug = slugify.slugify(title, to_lower=True, max_length=128)
+
+        if record_exists(Match, slug=new_slug):
+            #TODO check status code
+            return api_error(m.MATCH_EXISTS), 409
+
+    # Update fields
+    match.title = title or match.title
+    match.slug = new_slug or match.slug
+
+    match.short_description = (
+        received.get('short_description', match.short_description)
+    )
+    match.long_description = (
+        received.get('long_description', match.long_description)
+    )
+    match.start_date = received.get('start_date', match.start_date)
+    match.end_date = received.get('end_date', match.end_date)
+    match.min_team = received.get('min_team', match.min_team)
+    match.max_team = received.get('max_team', match.max_team)
+    match.is_visible = received.get('is_visible', match.is_visible)
+
+    try:
+        correct = True
+        db.session.commit()
+
+    except Exception as e:
+        # TODO log
+        correct = False
+
+    finally:
+        if not correct:
+            db.session.rollback()
+            return api_error(m.RECORD_UPDATE_ERROR), 500
+
+    return api_success(**match.as_dict(True)), 200
