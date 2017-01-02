@@ -7,8 +7,8 @@ from sqlalchemy import or_
 from loc import db
 from loc.helper import messages as m
 from loc.helper.util import api_error, api_fail, api_success, \
-        generate_expiration_date, generate_token, hash_matches, \
-        hash_password, record_exists
+        check_missing_fields, generate_expiration_date, generate_token, \
+        hash_matches, hash_password, record_exists
 from loc.models import User
 
 import datetime
@@ -34,16 +34,15 @@ def login():
     """
     received = request.get_json()
 
-    username = received.get('username')
-    password = received.get('password')
+    data = {
+        'username': received.get('username'),
+        'password': received.get('password'),
+    }
+
     remember = received.get('remember_me', False)
 
-    error = {}
-
-    if not username:
-        error['username'] = m.FIELD_MISSING
-    if not password:
-        error['password'] = m.FIELD_MISSING
+    # Check missing fields
+    error = check_missing_fields(data)
 
     if error:
         return api_fail(**error), 401
@@ -52,10 +51,10 @@ def login():
     user = (
         User
         .query
-        .filter_by(username=username)
+        .filter_by(username=data['username'])
     ).first()
 
-    if not user or not hash_matches(password, user.password):
+    if not user or not hash_matches(data['password'], user.password):
         return api_fail(username=m.CHECK_DATA, password=m.CHECK_DATA), 401
 
     # Create JWT token
@@ -209,18 +208,13 @@ def signup():
     """
     received = request.get_json()
 
-    username = received.get('username')
-    email = received.get('email')
-    password = received.get('password')
+    data = {
+        'username': received.get('username'),
+        'email': received.get('email'),
+        'password': received.get('password')
+    }
 
-    error = {}
-
-    if not username:
-        error['username'] = m.FIELD_MISSING
-    if not email:
-        error['email'] = m.FIELD_MISSING
-    if not password:
-        error['password'] = m.FIELD_MISSING
+    error = check_missing_fields(data)
 
     if error:
         #TODO check status code
@@ -232,8 +226,8 @@ def signup():
         .query
         .filter(
             or_(
-                User.username==username,
-                User.email==email
+                User.username==data['username'],
+                User.email==data['email']
             )
         ).exists()
     ).scalar()
@@ -243,10 +237,8 @@ def signup():
         return api_error(m.USER_EXISTS), 409
 
     # Create user
-    new_user = User()
-    new_user.username = username
-    new_user.email = email
-    new_user.password = hash_password(password)
+    new_user = User(**data)
+    new_user.password = hash_password(data['password'])
 
     try:
         correct = True
@@ -262,4 +254,4 @@ def signup():
             db.session.rollback()
             return api_error(m.RECORD_CREATE_ERROR), 500
 
-    return api_success(username=username), 201
+    return api_success(username=data['username']), 201

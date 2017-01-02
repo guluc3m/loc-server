@@ -6,7 +6,8 @@ from flask import Blueprint, request
 from loc import db
 from loc.helper import messages as m
 from loc.helper.deco import login_required, role_required
-from loc.helper.util import api_error, api_fail, api_success, user_from_jwt
+from loc.helper.util import api_error, api_fail, api_success, \
+        check_missing_fields, record_exists
 from loc.models import Match
 
 import datetime
@@ -46,11 +47,7 @@ def match_create():
     }
 
     # Check for missing fields
-    error = {}
-
-    for field, value in data.items():
-        if not value:
-            error[field] = m.FIELD_MISSING
+    error = check_missing_fields(data)
 
     if error:
         #TODO check status code
@@ -62,14 +59,7 @@ def match_create():
         slugify.slugify(data['title'], to_lower=True, max_length=255)
     )
 
-    match_exists = db.session.query(
-        Match
-        .query
-        .filter(Match.slug==data['slug'])
-        .exists()
-    ).scalar()
-
-    if match_exists:
+    if record_exists(Match, slug=data['slug']):
         #TODO check status code
         return api_error(m.MATCH_EXISTS), 409
 
