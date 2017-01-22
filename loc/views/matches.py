@@ -114,7 +114,7 @@ def match_list():
             'slug': match.slug
         })
 
-    return api_success(*result), 200
+    return api_success(matches=result), 200
 
 
 @bp_match.route('/matches/<slug>')

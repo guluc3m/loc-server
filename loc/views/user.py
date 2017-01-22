@@ -139,4 +139,4 @@ def user_matches(username):
             'slug': match.slug
         })
 
-    return api_success(*response), 200
+    return api_success(matches=response), 200
