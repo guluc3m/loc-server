@@ -8,7 +8,7 @@ from loc.helper import messages as m
 from loc.helper.deco import login_required
 from loc.helper.util import api_error, api_fail, api_success, \
         record_exists, user_from_jwt
-from loc.models import Follower, User
+from loc.models import Follower, Match, User
 
 
 bp_user = Blueprint('user', __name__)
@@ -114,5 +114,29 @@ def user_matches(username):
     Args:
         username (str): Unique username
     """
-    # TODO
-    pass
+    user = (
+        User
+        .query
+        .filter_by(username=username, is_deleted=False)
+    ).first()
+
+    if not user:
+        return api_fail(username=m.USER_NOT_FOUND), 404
+
+    response = []
+
+    # Only complete teams are considered
+    for team in user.teams:
+        if not team.is_participating:
+            continue
+
+        match = Match.query.get(team.match_id)
+
+        response.append({
+            'team_id': team.id,
+            'match_id': match.id,
+            'title': match.title,
+            'slug': match.slug
+        })
+
+    return api_success(*response), 200

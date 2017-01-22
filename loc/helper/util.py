@@ -33,31 +33,33 @@ def api_error(message='', **kwargs):
 
     return jsonify(**response)
 
-def api_fail(**kwargs):
+def api_fail(*args, **kwargs):
     """Generate a failure JSON response.
 
     This response is based on the JSend specification and should be used when
     the data received is invalid.
 
-    Keyword arguments are included in the 'data' attribute of the response.
+    Arguments are included in the 'data' attribute of the response, with *args
+    taking preference over **kwargs.
     """
     response = {
         'status': 'fail',
-        'data': kwargs
+        'data': list(args) or kwargs
     }
 
     return jsonify(**response)
 
-def api_success(**kwargs):
+def api_success(*args, **kwargs):
     """Generate a success JSON response.
 
     This response is based on the JSend specification.
 
-    Keyword arguments are included in the 'data' attribute of the response.
+    Arguments are included in the 'data' attribute of the response, with *args
+    taking preference over **kwargs.
     """
     response = {
         'status': 'success',
-        'data': kwargs
+        'data': list(args) or kwargs
     }
 
     return jsonify(**response)
