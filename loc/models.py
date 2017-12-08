@@ -1,16 +1,42 @@
 # -*- coding: utf-8 -*-
+#
+# League of Code server implementation
+# https://github.com/guluc3m/loc-server
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2017 Grupo de Usuarios de Linux UC3M <http://gul.es>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-"""SQLalchemy model declarations."""
+"""Model definition."""
 
 from loc import db
 from sqlalchemy.ext.associationproxy import association_proxy
+
 
 class Follower(db.Model):
     """User followers.
 
     Attributes:
         follower_id (int): Unique ID of user that is following.
-        following_id (int): Unique ID of user that is being followed
+        followee_id (int): Unique ID of user that is being followed
     """
     __tablename__ = 'followers'
 
@@ -19,59 +45,11 @@ class Follower(db.Model):
         db.ForeignKey('users.id'),
         primary_key=True
     )
-    following_id = db.Column(
+    followee_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id'),
         primary_key=True
     )
-
-
-class Loadout(db.Model):
-    """Team template.
-
-    Loadouts are lists of users that can be used to automatically create a
-    team for a specific match.
-
-    Attributes:
-        id (int): Unique ID of the record.
-        name (str): Name of the loadout.
-        owner_id (int): ID of the owner.
-    """
-    __tablename__ = 'loadouts'
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    name = db.Column(db.String(128), nullable=False)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-    # Relationships
-    members = db.relationship(
-        'User',
-        secondary='loadout_members',
-        lazy='dynamic',
-        collection_class=set
-    )
-
-    # Constraints
-    __table_args__ = (db.UniqueConstraint('name', 'owner_id'),)
-
-
-class LoadoutMember(db.Model):
-    """Members in a specific loadout.
-
-    Attributes:
-        loadout_id (int): ID of the loadout.
-        user_id (int): ID of the user/member.
-    """
-    __tablename__ = 'loadout_members'
-
-    loadout_id = db.Column(
-        db.Integer,
-        db.ForeignKey('loadouts.id'),
-        primary_key=True
-    )
-
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
 
 
 class Match(db.Model):
@@ -83,36 +61,36 @@ class Match(db.Model):
         short_description (str): Short description with very basic information.
         long_description (str): Complete description with details and rules.
             Only shown once the match has started.
-        start_date (date): Date in which the match starts. No team registrations
+        start_date (date): Date in which the match starts. No party registrations
             can occur after this date.
         end_date (date): Date in which the match ends. No submissions are
             accepted after this date.
-        min_team (int): Minimum number of users in a team.
-        max_team (int): Maximum number of users in a team.
+        min_members (int): Minimum number of users in a party.
+        max_members (int): Maximum number of users in a party.
+        leaderboard (str): Sorted comma-separated list of parties taking into
+            account their position after finishing the match
         slug (str): Unique slug generated from the title of the match.
-        is_visible (bool): Whether or not this match should be shown publicly.
-        is_deleted (bool): Whether or not the record has been deleted.
-        delete_date (date): Date in which the record was deleted.
+        is_visible (bool): Whether this match should be shown publicly.
+        is_deleted (bool): Whether the record has been (soft) deleted.
+        delete_date (date): Date in which the record was (soft) deleted.
     """
     __tablename__ = 'matches'
 
     id = db.Column(db.Integer, primary_key=True)
 
-    title = db.Column(db.String(128), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
     short_description = db.Column(db.String(255), nullable=False)
     long_description = db.Column(db.Text, nullable=False)
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
-    min_team = db.Column(db.Integer, nullable=False, default=1)
-    max_team = db.Column(db.Integer, nullable=False, default=1)
+    min_members = db.Column(db.Integer, nullable=False, default=1)
+    max_members = db.Column(db.Integer, nullable=False, default=1)
+    leaderboard = db.Column(db.Text)
     slug = db.Column(db.String(128), nullable=False, unique=True)
     is_visible = db.Column(db.Boolean, nullable=False, default=False)
 
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     delete_date = db.Column(db.DateTime)
-
-    # Relationships
-    teams = db.relationship('Team', backref='match', lazy='dynamic')
 
 
     def as_dict(self, include_long=False):
@@ -122,8 +100,7 @@ class Match(db.Model):
 
         Args:
             include_long (bool): Include the long description (should be done
-                only if the match has started).
-
+        o        only if the match has started).
         Returns:
             dict with all the public attributes.
         """
@@ -134,14 +111,50 @@ class Match(db.Model):
             'long_description': self.long_description if include_long else '',
             'start_date': self.start_date,
             'end_date': self.end_date,
-            'min_team': self.min_team,
-            'max_team': self.max_team,
+            'min_members': self.min_members,
+            'max_members': self.max_members,
             'slug': self.slug
         }
 
 
+class MatchParticipant(db.Model):
+    """Match participants.
+
+    Attributes:
+        user_id (int): Unique ID of the participant.
+        match_id (int): Match ID where the user is participating.
+        party_owner_id (int): ID of the owner of the party the user is in.
+        is_participating (bool): Whether the user is participating in the match.
+    """
+    __tablename__ = 'match_participants'
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), primary_key=True)
+
+    party_owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    is_participating = db.Column(db.Boolean, default=False)
+
+
+class PartyToken(db.Model):
+    """Party tokens used to join a party.
+
+    Attributes:
+        owner_id (int): ID of the owner of the party.
+        match_id (int): ID of the match the party is participating in.
+        token (str): Unique random token.
+        is_public (bool): Whether the party can be publicly found.
+    """
+    __tablename__ = 'party_tokens'
+
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), primary_key=True)
+
+    token = db.Column(db.String(32), unique=True)
+    is_public = db.Column(db.Boolean, default=False)
+
+
 class Role(db.Model):
-    """Special roles recognized in the platform
+    """Special roles used for some actions.
 
     The following roles are specified:
         admin: can perform special actions such as creation of matches
@@ -169,95 +182,52 @@ class Role(db.Model):
 
 
 class Submission(db.Model):
-    """Team submission for a specific match
+    """Project submission for a match.
 
     Attributes:
-        id (int): Unique ID of the record.
-        title (str): Title of the submitted project.
-        description (str): Description of the submitted project.
-        url (str): URL to a repository.
-        team_id (int): ID of the team.
+        id (int): Unique ID of the submission.
+        title (str): Short title of the project.
+        description (str): Long description of the project.
+        url (str): URL from which the project can be downloaded.
+        match_id (int): ID of the match this submission belongs to.
+        party_owner_id (int): ID of the owner of the submitting party.
     """
     __tablename__ = 'submissions'
 
     id = db.Column(db.Integer, primary_key=True)
-
-    title = db.Column(db.String(128), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    url = db.Column(db.String(255), nullable=False)
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'))
+    url = db.Column(db.String(512), nullable=False)
 
-
-class Team(db.Model):
-    """Team participating in a match.
-
-    Attributes:
-        id (int): Unique ID of the record.
-        owner_id (int): ID of the user that created the team.
-        match_id (int): ID of the match.
-        invite_token (str): Unique token used to join the team.
-        position (int): Position in which the team finished. When there is a
-            value of -1, the match has not finished or the team has been
-            disqualified.
-        is_participating (bool): Whether all members have accepted or not.
-        is_disqualified (bool): Whether the team is disqualified or not.
-    """
-    __tablename__ = 'teams'
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'))
-    invite_token = db.Column(db.String(64), nullable=False, unique=True)
-    position = db.Column(db.Integer, nullable=False, default=-1)
-    is_participating = db.Column(db.Boolean, nullable=False, default=False)
-    is_disqualified = db.Column(db.Boolean, nullable=False, default=False)
-
-    # Relationships
-    submission = db.relationship('Submission', backref='team', lazy='dynamic')
-
-    # Constraints
-    __table_args__ = (db.UniqueConstraint('owner_id', 'match_id'), )
-
-
-class TeamMember(db.Model):
-    """Member of a team.
-
-    These records created when users join teams through invitations.
-
-    Attributes:
-        team_id (int): ID of the team.
-        user_id (int): ID of the user.
-    """
-    __tablename__ = 'team_members'
-
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.id'), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    party_owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
 
 class User(db.Model):
-    """LoC users.
+    """Platform users.
 
     Attributes:
         id (int): ID of the user record.
         username (str): Unique username.
+        name (str): (Optional) Real name of the user.
         email (str): Unique email used for communication and password reset.
         password (str): Encrypted password.
-        score (int): Total score.
+        points (int): Total score obtained by participating in matches.
         pasword_reset_token (str): Unique token for restoring password.
         token_expiration (date): Date in which the reset token stops being valid.
             Usually should be 24 hours after the creation of the token.
-        is_deleted (bool): Whether or not the record has been deleted.
-        delete_date (date): Date in which the record was deleted.
+        is_deleted (bool): Whether the record has been (soft) deleted.
+        delete_date (date): Date in which the record was (soft) deleted.
     """
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
 
-    username = db.Column(db.String(64), nullable=False, unique=True)
+    username = db.Column(db.String(128), nullable=False, unique=True)
+    name = db.Column(db.String(255), nullable=False, default='')
     email = db.Column(db.String(255), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    score = db.Column(db.Integer, nullable=False, default=0)
+    points = db.Column(db.Integer, nullable=False, default=0)
 
     password_reset_token = db.Column(db.String(64))
     token_expiration = db.Column(db.DateTime)
@@ -275,8 +245,6 @@ class User(db.Model):
         lazy='dynamic'
     )
 
-    loadouts = db.relationship('Loadout', backref='owner', lazy='dynamic')
-
     roles = db.relationship(
         'Role',
         secondary='user_roles',
@@ -284,16 +252,6 @@ class User(db.Model):
         cascade='delete, save-update',
         collection_class=set
     )
-
-    teams = db.relationship(
-        'Team',
-        secondary='team_members',
-        backref=db.backref('members', lazy='dynamic'),
-        lazy='dynamic',
-        collection_class=set
-    )
-
-    teams_owner = db.relationship('Team', backref='owner', lazy='dynamic')
 
     # Proxies
     role_names = association_proxy(
@@ -307,8 +265,8 @@ class UserRole(db.Model):
     """Roles assigned to a specific user.
 
     Attributes:
-        user_id (int): ID of the user
-        role_id (int): ID of the role
+        user_id (int): ID of the user.
+        role_id (int): ID of the role.
     """
     __tablename__ = 'user_roles'
 
