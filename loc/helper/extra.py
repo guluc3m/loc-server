@@ -25,46 +25,32 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Application bootstrap."""
+"""Additional functions for bootstrapping the application."""
 
-from flask import Flask
-from flask_babel import Babel
-from flask_mail import Mail
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
-from loc.helper.extra import make_celery
-
-import os
+from celery import Celery
 
 
-app = Flask(__name__, instance_relative_config=True)
+def make_celery(app):
+    """Create a Celery object for asynchronous tasks.
 
-# Load configuration specified in environment variable or default
-# development one
-# Production configurations shold be stored in `instance/` (ignored in repo)
-if 'LOC_CONFIG_FILE' in os.environ:
-    app.config.from_envvar('LOC_CONFIG_FILE')
+    Based on <http://flask.pocoo.org/docs/0.11/patterns/celery/>
 
-else:
-    app.config.from_object('config.development')
+    The application context is needed by extensions such as Flask-Mail.
+    """
+    cel = Celery(
+        app.import_name,
+        backend=app.config['CELERY_BACKEND'],
+        broker=app.config['CELERY_BROKER_URL']
+    )
 
+    cel.conf.update(app.config)
+    TaskBase = cel.Task
 
-# Setup database
-db = SQLAlchemy(app)
-# Force model registration
-from loc import models
+    class ContextTask(TaskBase):
+        abstract = True
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
 
-# Database migrations
-migrate = Migrate(app, db)
-
-
-# Setup Flask-Babel
-babel = Babel(app)
-
-
-# Setup Flask-Mail
-mail = Mail(app)
-
-
-# Setup Celery
-celery = make_celery(app)
+    cel.Task = ContextTask
+    return cel
