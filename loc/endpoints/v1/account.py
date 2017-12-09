@@ -143,11 +143,7 @@ def login():
 
 
     # Check user record
-    user = (
-        User
-        .query
-        .filter_by(username=data['username'])
-    ).first()
+    user = User._by_username(data['username'], False)
 
     if not user or not util.hash_matches(data['password'], user.password):
         return api_fail(username=m.CHECK_DATA, password=m.CHECK_DATA), 401
@@ -356,11 +352,7 @@ def forgot_password():
 
 
     # Check user record
-    user = (
-        User
-        .query
-        .filter_by(email=email)
-    ).first()
+    user = User._by_email(email)
 
     if not user:
         return api_success(), 200

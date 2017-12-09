@@ -116,6 +116,36 @@ class Match(db.Model):
             'slug': self.slug
         }
 
+    @staticmethod
+    def _by_slug(slug, skip_deleted=True):
+        """Obtain a match by username.
+
+        Args:
+            slug (str): Match slug to find.
+            skip_deleted (bool): Whether to skip deleted users.
+        """
+        if skip_deleted:
+            query = (
+                Match
+                .query
+                .filter_by(
+                    slug=slug,
+                    is_visible=True,
+                    is_deleted=False
+                )
+            )
+        else:
+            query = (
+                Match
+                .query
+                .filter_by(
+                    slug=slug,
+                    is_visible=True,
+                )
+            )
+
+        return query.first()
+
 
 class MatchParticipant(db.Model):
     """Match participants.
@@ -262,6 +292,36 @@ class User(db.Model):
         'name',
         creator=lambda n: Role.get_role(n)
     )
+
+    @staticmethod
+    def _by_username(username, skip_deleted=True):
+        """Obtain a user by username.
+
+        Args:
+            username (str): Username to find.
+            skip_deleted (bool): Whether to skip deleted users.
+        """
+        if skip_deleted:
+            query = User.query.filter_by(username=username, is_deleted=False)
+        else:
+            query = User.query.filter_by(username=username)
+
+        return query.first()
+
+    @staticmethod
+    def _by_email(email, skip_deleted=True):
+        """Obtain a user by email.
+
+        Args:
+            email (str): Email to find.
+            skip_deleted (bool): Whether to skip deleted users.
+        """
+        if skip_deleted:
+            query = User.query.filter_by(email=email, is_deleted=False)
+        else:
+            query = User.query.filter_by(email=email)
+
+        return query.first()
 
 
 class UserRole(db.Model):

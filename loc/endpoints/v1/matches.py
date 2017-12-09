@@ -149,15 +149,7 @@ def match_info():
 
 
     # Query match
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False
-        )
-    ).first()
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -187,15 +179,7 @@ def match_leaderboard():
 
 
     # Query match
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False
-        )
-    ).first()
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -210,24 +194,16 @@ def match_leaderboard():
     if not match.leaderboard:
         return api_success(**util.paginated(1, 1, [])), 200
 
+    # Query parties
+    per_page = current_app.config['PARTIES_PER_PAGE']
+    parties = (
+        PartyToken
+        .query
+        .filter_by(match_id=match.id)
+        .paginate(page, per_page, error_out=False)
+    )
 
-    # Query participants
-    leaderboard_pages = list(util.list_chunks(
-        [int(p) for p in match.leaderboard.split(',')],
-        current_app.config['PARTIES_PER_PAGE']
-    ))
-
-    response['pages'] = len(leaderboard_pages)
-
-    if page <= 0:
-        page = 1
-
-    elif page >= response['pages']:
-        page = response['pages']
-
-    response['page'] = page
-
-    for party_owner_id in leaderboard_pages[page-1]:
+    for party in parties:
         party_details = {
             'leader': '',
             'members': []
@@ -238,7 +214,7 @@ def match_leaderboard():
             .query(User.id, User.username)
             .join(MatchParticipant, User.id==MatchParticipant.user_id)
             .filter(
-                MatchParticipant.party_owner_id == party_owner_id,
+                MatchParticipant.party_owner_id == party.owner_id,
                 MatchParticipant.match_id == match.id,
                 User.is_deleted == False
             )
@@ -246,7 +222,7 @@ def match_leaderboard():
         )
 
         for member in members:
-            if member[0] == party_owner_id:
+            if member[0] == party.owner_id:
                 party_details['leader'] = member[1]
 
             party_details['members'].append(member[1])
@@ -276,15 +252,7 @@ def join_match():
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False
-        )
-    ).first()
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -365,15 +333,7 @@ def leave_match():
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False
-        )
-    ).first()
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -469,16 +429,7 @@ def list_parties():
     response = []
 
     # Query match
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False,
-        )
-        .first()
-    )
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -493,9 +444,7 @@ def list_parties():
     parties = (
         PartyToken
         .query
-        .filter(
-            PartyToken.match_id == match.id
-        )
+        .filter_by(match_id=match.id)
         .paginate(page, per_page, error_out=False)
     )
 
@@ -554,16 +503,7 @@ def list_lfg():
     response = []
 
     # Query match
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False,
-        )
-        .first()
-    )
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -632,16 +572,7 @@ def show_submission():
     if not slug:
         return api_fail(match=m.FIELD_MISSING), 400
 
-    match = (
-        Match
-        .query
-        .filter(
-            Match.slug == slug,
-            Match.is_visible == True,
-            Match.is_deleted == False
-        )
-        .first()
-    )
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -753,11 +684,7 @@ def edit_submission():
 
 
     # Query match
-    match = (
-        Match
-        .query
-        .filter_by(slug=slug, is_visible=True, is_deleted=False)
-    )
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
