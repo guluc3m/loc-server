@@ -69,7 +69,7 @@ def upgrade():
     sa.Column('match_id', sa.Integer(), nullable=False),
     sa.Column('party_owner_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['match_id'], ['matches.id'], ),
-    sa.ForeignKeyConstraint(['party_owner_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['party_owner_id'], ['parties.owner_id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id', 'match_id')
     )

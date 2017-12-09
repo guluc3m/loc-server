@@ -28,7 +28,12 @@ FIELD_MISSING = t('Field was missing in request')
 # Party
 PARTY_NOT_EMPTY = t('Your party is not empty')
 PARTY_NOT_FOUND = t('Could not find party')
+PARTY_CANNOT_JOIN = t('The party cannot accept any more members')
+PARTY_FULL = t('The party is full')
+PARTY_LEADER = t('You are the leader of the party')
+ALREADY_IN_PARTY = t('You are already in a party')
 NOT_LEADER = t('You are not the leader of the party')
+CANNOT_KICK = t('You are the leader of the party and cannot kick yourself')
 
 # Record
 RECORD_CREATE_ERROR = t('Error creating record')

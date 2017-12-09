@@ -284,7 +284,7 @@ def join_match():
     while util.record_exists(Party, token=party_token):
         party_token = util.generate_token()
 
-    new_token = Party(
+    new_party = Party(
         owner_id=user.id,
         match_id=match.id,
         token=party_token,
@@ -295,7 +295,7 @@ def join_match():
     try:
         correct = True
         db.session.add(new_participant)
-        db.session.add(new_token)
+        db.session.add(new_party)
         db.session.commit()
 
     except Exception as e:
@@ -501,9 +501,6 @@ def list_lfg():
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
 
-    if match.start_date > datetime.datetime.utcnow():
-        return api_success(**util.paginated(1, 1, [])), 200
-
 
     # Query parties
     per_page = current_app.config['MATCHES_PER_PAGE']
@@ -511,7 +508,7 @@ def list_lfg():
     parties = (
         Party
         .query
-        .filter_by(match_id=match.id, is_visible=True)
+        .filter_by(match_id=match.id, is_public=True)
         .paginate(page, per_page, error_out=False)
     )
 

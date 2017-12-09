@@ -79,7 +79,7 @@ def check_missing_fields(data, ignore=[]):
     error = {}
 
     for field, value in data.items():
-        if field not in ignore and not value:
+        if field not in ignore and value != None:
             error[field] = m.FIELD_MISSING
 
     return error
@@ -91,7 +91,7 @@ def generate_expiration_date(**kwargs):
     """
     return datetime.datetime.utcnow() + datetime.timedelta(**kwargs)
 
-def generate_token(length=32):
+def generate_token(length=64):
     """Generate a random token.
 
     Args:

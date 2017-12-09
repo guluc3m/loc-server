@@ -92,6 +92,13 @@ class Match(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     delete_date = db.Column(db.DateTime)
 
+    # Relationships
+    parties = db.relationship(
+        'Party',
+        backref=db.backref('match', lazy='select'),
+        lazy='dynamic'
+    )
+
 
     def as_dict(self, include_long=False):
         """Get record fields as a dictionary.
@@ -160,7 +167,14 @@ class MatchParticipant(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), primary_key=True)
 
-    party_owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    party_owner_id = db.Column(db.Integer, db.ForeignKey('parties.owner_id'))
+
+    # Relationships
+    user = db.relationship(
+        'User',
+        uselist=False,
+        lazy='select'
+    )
 
 
 class Party(db.Model):
@@ -181,6 +195,21 @@ class Party(db.Model):
     token = db.Column(db.String(32), unique=True)
     is_public = db.Column(db.Boolean, default=False)
     is_participating = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    members = db.relationship(
+        'MatchParticipant',
+        primaryjoin='Party.owner_id==MatchParticipant.party_owner_id',
+        backref=db.backref('party', lazy='select'),
+        lazy='dynamic'
+    )
+
+    owner = db.relationship(
+        'User',
+        primaryjoin='Party.owner_id==User.id',
+        uselist=False,
+        lazy='select'
+    )
 
 
 class Role(db.Model):
