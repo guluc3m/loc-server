@@ -147,3 +147,93 @@ def role_required(role):
         return decorated_function
 
     return decorator
+
+
+def check_required(params):
+    """Check that the specified parameters are provided and valid.
+
+    Args:
+        params (list[tuple]): List of tuples containing the parameter name
+            and the data type that the parameter should be.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            json = request.get_json()
+
+            # Check if JSON was provided
+            if not json:
+                response = {}
+                for p in params:
+                    response[p[0]] = m.FIELD_MISSING
+
+                return util.api_fail(**response), 400
+
+            # Check for missing fields and wrong data types
+            errors = {}
+            for p in params:
+                name = p[0]
+                p_type = p[1]
+
+                # Missing field
+                if name not in json.keys():
+                    errors[name] = m.FIELD_MISSING
+                    continue
+
+                # Wrong data type
+                if not isinstance(json[name], p_type):
+                    errors[name] = m.INVALID_TYPE
+
+            # Return errors if any
+            if errors:
+                return util.api_fail(**errors), 400
+
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator
+
+def check_optional(params):
+    """Check that the specified parameters are valid.
+
+    This is for optional parameters that may not appear in the request, so
+    they will only be checked if present.
+
+    Args:
+        params (list[tuple]): List of tuples containing the parameter name
+            and the data type that the parameter should be.
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            json = request.get_json()
+
+            # Check if JSON was provided
+            if not json:
+                # Nothing to do
+                return f(*args, **kwargs)
+
+            # Check for missing fields and wrong data types
+            errors = {}
+            for p in params:
+                name = p[0]
+                p_type = p[1]
+
+                # Missing field, skip it
+                if name not in json.keys():
+                    continue
+
+                # Wrong data type
+                if not isinstance(json[name], p_type):
+                    errors[name] = m.INVALID_TYPE
+
+            # Return errors if any
+            if errors:
+                return util.api_fail(**errors), 400
+
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator

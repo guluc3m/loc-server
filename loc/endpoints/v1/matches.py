@@ -30,7 +30,7 @@
 from flask import Blueprint, current_app, request
 from loc import db
 from loc.helper import messages as m, util
-from loc.helper.deco import login_required
+from loc.helper.deco import login_required, check_required, check_optional
 from loc.helper.util import api_error, api_fail, api_success
 from loc.models import Match, MatchParticipant, Party, Submission, User
 
@@ -40,6 +40,7 @@ v1_matches = Blueprint('v1_matches', __name__)
 
 
 @v1_matches.route('/list')
+@check_optional([('page', int)])
 def list_current_matches():
     """Return paginated list of current matches.
 
@@ -47,15 +48,10 @@ def list_current_matches():
         page (int): Optional. Page number to return
     """
     received = request.get_json()
-
     if received:
         page = received.get('page', 1)
     else:
         page = 1
-
-    if not isinstance(page, int):
-        return api_fail(page=m.PAGE_INVALID), 400
-
 
     # Query matches
     per_page = current_app.config['MATCHES_PER_PAGE']
@@ -88,6 +84,7 @@ def list_current_matches():
 
 
 @v1_matches.route('/list-past')
+@check_optional([('page', int)])
 def list_past_matches():
     """Return paginated list of past matches.
 
@@ -95,15 +92,10 @@ def list_past_matches():
         page (int): Optional. Page number to return
     """
     received = request.get_json()
-
     if received:
         page = received.get('page', 1)
     else:
         page = 1
-
-    if not isinstance(page, int):
-        return api_fail(page=m.PAGE_INVALID), 400
-
 
     # Query matches
     per_page = current_app.config['MATCHES_PER_PAGE']
@@ -136,6 +128,7 @@ def list_past_matches():
 
 
 @v1_matches.route('/info')
+@check_required([('match', str)])
 def match_info():
     """Get details for a given match.
 
@@ -143,10 +136,6 @@ def match_info():
         match (str): Unique slug of the match.
     """
     slug = request.get_json().get('match')
-
-    if not slug:
-        return api_fail(match=m.MATCH_NOT_FOUND), 404
-
 
     # Query match
     match = Match._by_slug(slug)
@@ -159,6 +148,8 @@ def match_info():
     return api_success(**response), 200
 
 @v1_matches.route('/leaderboard')
+@check_required([('match', str)])
+@check_optional([('page', int)])
 def match_leaderboard():
     """Obtain paginated leaderboard of the match.
 
@@ -167,16 +158,8 @@ def match_leaderboard():
         page (int): Optional. Page number to return.
     """
     received = request.get_json()
-
     slug = received.get('match')
     page = received.get('page', 1)
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
-
-    if not isinstance(page, int):
-        return api_fail(page=m.PAGE_INVALID), 400
-
 
     # Query match
     match = Match._by_slug(slug)
@@ -231,6 +214,7 @@ def match_leaderboard():
 
 @v1_matches.route('/join', methods=['POST'])
 @login_required
+@check_required([('match', str)])
 def join_match():
     """Join the specified match.
 
@@ -240,14 +224,13 @@ def join_match():
     received = request.get_json()
     slug = received.get('match')
 
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
-
     user = util.user_from_jwt(received.get('token'))
 
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
+
+    # Query match
     match = Match._by_slug(slug)
 
     if not match:
@@ -312,6 +295,7 @@ def join_match():
 
 @v1_matches.route('/leave', methods=['POST'])
 @login_required
+@check_required([('match', str)])
 def leave_match():
     """Leave the specified match.
 
@@ -321,14 +305,13 @@ def leave_match():
     received = request.get_json()
     slug = received.get('match')
 
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
-
     user = util.user_from_jwt(received.get('token'))
 
     if not user:
         return api_error(m.USER_NOT_FOUND), 404
 
+
+    # Query match
     match = Match._by_slug(slug)
 
     if not match:
@@ -395,6 +378,8 @@ def leave_match():
 
 
 @v1_matches.route('/participants')
+@check_required([('match', str)])
+@check_optional([('page', int)])
 def list_parties():
     """List participating parties.
 
@@ -405,19 +390,8 @@ def list_parties():
         page (int): Page number to return.
     """
     received = request.get_json()
-
-    if received:
-        page = received.get('page', 1)
-    else:
-        page = 1
-
-    if not isinstance(page, int):
-        return api_fail(page=m.PAGE_INVALID), 400
-
     slug = received.get('match')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
+    page = received.get('page', 1)
 
     response = []
 
@@ -471,6 +445,8 @@ def list_parties():
     return api_success(**util.paginated(page, parties.pages, response)), 200
 
 @v1_matches.route('/lfg')
+@check_required([('match', str)])
+@check_optional([('page', int)])
 def list_lfg():
     """List parties looking for more members.
 
@@ -479,19 +455,8 @@ def list_lfg():
         page (int): Page number to return.
     """
     received = request.get_json()
-
-    if received:
-        page = received.get('page', 1)
-    else:
-        page = 1
-
-    if not isinstance(page, int):
-        return api_fail(page=m.PAGE_INVALID), 400
-
     slug = received.get('match')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
+    page = received.get('page', 1)
 
     response = []
 
@@ -544,6 +509,8 @@ def list_lfg():
 
 
 @v1_matches.route('/submission')
+@check_required([('match', str)])
+@check_optional([('party', str)])
 def show_submission():
     """Obtain details of the party's submission for the given match.
 
@@ -555,9 +522,6 @@ def show_submission():
     token = received.get('token')
     slug = received.get('match')
     party_owner = received.get('party')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
 
     match = Match._by_slug(slug)
 
@@ -657,6 +621,8 @@ def _show_submission_public(match):
 
 @v1_matches.route('/submission', methods=['PUT'])
 @login_required
+@check_required([('match', str)])
+@check_optional([('title', str), ('description', str), ('url', str)])
 def edit_submission():
     """Edit a submission.
 
@@ -675,9 +641,6 @@ def edit_submission():
         return api_error(m.USER_NOT_FOUND), 404
 
     slug = received.get('match')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
 
 
     # Query match

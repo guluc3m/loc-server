@@ -30,7 +30,7 @@
 from flask import Blueprint, current_app, request
 from loc import db
 from loc.helper import messages as m, util
-from loc.helper.deco import login_required
+from loc.helper.deco import login_required, check_required
 from loc.helper.util import api_error, api_fail, api_success
 from loc.models import Match, MatchParticipant, User, Party
 
@@ -41,6 +41,7 @@ v1_parties = Blueprint('v1_parties', __name__)
 
 @v1_parties.route('/join', methods=['POST'])
 @login_required
+@check_required([('party', str)])
 def join_party():
     """Join the specified party.
 
@@ -49,10 +50,6 @@ def join_party():
     """
     received = request.get_json()
     party_token = received.get('party')
-
-    if not party_token:
-        return api_fail(party=m.FIELD_MISSING), 400
-
 
     # Query party
     party = (
@@ -134,6 +131,7 @@ def join_party():
 
 @v1_parties.route('/leave', methods=['POST'])
 @login_required
+@check_required([('match', str)])
 def leave_party():
     """Leave current party for the match
 
@@ -142,9 +140,6 @@ def leave_party():
     """
     received = request.get_json()
     slug = received.get('match')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
 
     # Query match
     match = Match._by_slug(slug)
@@ -211,6 +206,7 @@ def leave_party():
 
 
 @v1_parties.route('/kick', methods=['POST'])
+@check_required([('match', str), ('user', str)])
 def kick_member():
     """Kick a member from the party.
 
@@ -219,16 +215,8 @@ def kick_member():
         user (str): Username of the user to kick.
     """
     received = request.get_json()
-    data = {
-        'match': received.get('match'),
-        'user': received.get('user')
-    }
-
-    # Check missing fields
-    error = util.check_missing_fields(data)
-    if error:
-        return api_fail(**error), 400
-
+    slug = received.get('match')
+    username = received.get('user')
 
     # User record
     user = util.user_from_jwt(received.get('token'))
@@ -238,7 +226,7 @@ def kick_member():
 
 
     # Query match
-    match = Match._by_slug(data['match'])
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -262,10 +250,10 @@ def kick_member():
 
 
     # Check user to delete
-    if data['user'] == user.username:
+    if username == user.username:
         return api_fail(user=m.CANNOT_KICK), 403
 
-    to_kick = User._by_username(data['user'])
+    to_kick = User._by_username(username)
 
     if not user:
         return api_fail(user=m.USER_NOT_FOUND), 404
@@ -316,6 +304,7 @@ def kick_member():
 
 
 @v1_parties.route('/disband', methods=['POST'])
+@check_required([('match', str)])
 def disband_party():
     """Disband a party.
 
@@ -324,10 +313,6 @@ def disband_party():
     """
     received = request.get_json()
     slug = received.get('match')
-
-    if not slug:
-        return api_fail(match=m.FIELD_MISSING), 400
-
 
     # Query match
     match = Match._by_slug(slug)
@@ -415,6 +400,7 @@ def disband_party():
 
 
 @v1_parties.route('/lfg', methods=['POST'])
+@check_required([('match', str), ('lfg', bool)])
 def set_lfg():
     """Set LFG visibility.
 
@@ -423,19 +409,11 @@ def set_lfg():
         lfg (bool): Whether the party is looking for members.
     """
     received = request.get_json()
-    data = {
-        'match': received.get('match'),
-        'lfg': received.get('lfg')
-    }
-
-    # Check missing fields
-    error = util.check_missing_fields(data)
-    if error:
-        return api_fail(**error), 400
-
+    slug = received.get('match')
+    lfg = received.get('lfg')
 
     # Query match
-    match = Match._by_slug(data['match'])
+    match = Match._by_slug(slug)
 
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
@@ -464,7 +442,7 @@ def set_lfg():
 
 
     # Set LFG flag
-    party.is_public = data['lfg']
+    party.is_public = lfg
 
     try:
         correct = True

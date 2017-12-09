@@ -66,24 +66,6 @@ def api_success(*args, **kwargs):
 
     return jsonify(**response)
 
-def check_missing_fields(data, ignore=[]):
-    """Check for missing fields in the provided data.
-
-    Args:
-        data (dict): dict of data received in the API
-        ignore (list[str]): list of keys to ignore when checking required fields
-
-    Returns:
-        dict with missing fields as keys and error message as value
-    """
-    error = {}
-
-    for field, value in data.items():
-        if field not in ignore and value != None:
-            error[field] = m.FIELD_MISSING
-
-    return error
-
 def generate_expiration_date(**kwargs):
     """Generate an expiration date starting on current UTC datetime.
 

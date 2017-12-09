@@ -24,6 +24,7 @@ NOT_PARTICIPATING = t('You are not participating in the match')
 # Parameters
 CHECK_DATA = t('Check field for errors')
 FIELD_MISSING = t('Field was missing in request')
+INVALID_TYPE = t('Data type was not valid')
 
 # Party
 PARTY_NOT_EMPTY = t('Your party is not empty')
