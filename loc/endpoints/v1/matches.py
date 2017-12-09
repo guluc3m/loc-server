@@ -276,7 +276,6 @@ def join_match():
         user_id=user.id,
         match_id=match.id,
         party_owner_id=user.id,
-        is_participating=False
     )
 
     # Create Party token
@@ -289,7 +288,8 @@ def join_match():
         owner_id=user.id,
         match_id=match.id,
         token=party_token,
-        is_public=False
+        is_public=False,
+        is_participating=False
     )
 
     try:
@@ -437,7 +437,7 @@ def list_parties():
     parties = (
         Party
         .query
-        .filter_by(match_id=match.id)
+        .filter_by(match_id=match.id, is_participating=True)
         .paginate(page, per_page, error_out=False)
     )
 
@@ -627,12 +627,22 @@ def _show_submission_own(match):
 def _show_submission_public(match):
     """Show submission of other party."""
     received = request.get_json()
-    party = received.get('party')
+    party_owner = received.get('party')
+
+    user = User._by_username(party_owner)
+
+    if not user:
+        return api_fail(party=m.PARTY_NOT_FOUND), 404
 
     submission = (
-        Submission
-        .query
-        .filter_by(match_id=match.id, party_owner_id=party)
+        db.session
+        .query(Submission)
+        .join(Party, Submission.party_owner_id==Party.owner_id)
+        .filter(
+            Party.owner_id == user.id,
+            Party.match_id == match.id,
+            User.is_deleted == False
+        )
         .first()
     )
 
@@ -648,7 +658,7 @@ def _show_submission_public(match):
     return api_success(**response), 200
 
 
-@v1_matches.route('/submission', methods=['POST'])
+@v1_matches.route('/submission', methods=['PUT'])
 @login_required
 def edit_submission():
     """Edit a submission.
