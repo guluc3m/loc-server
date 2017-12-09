@@ -154,7 +154,6 @@ class MatchParticipant(db.Model):
         user_id (int): Unique ID of the participant.
         match_id (int): Match ID where the user is participating.
         party_owner_id (int): ID of the owner of the party the user is in.
-        is_participating (bool): Whether the user is participating in the match.
     """
     __tablename__ = 'match_participants'
 
@@ -162,10 +161,9 @@ class MatchParticipant(db.Model):
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), primary_key=True)
 
     party_owner_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    is_participating = db.Column(db.Boolean, default=False)
 
 
-class PartyToken(db.Model):
+class Party(db.Model):
     """Party tokens used to join a party.
 
     Attributes:
@@ -173,14 +171,16 @@ class PartyToken(db.Model):
         match_id (int): ID of the match the party is participating in.
         token (str): Unique random token.
         is_public (bool): Whether the party can be publicly found.
+        is_participating (bool): Whether the party is participating in the match.
     """
-    __tablename__ = 'party_tokens'
+    __tablename__ = 'parties'
 
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     match_id = db.Column(db.Integer, db.ForeignKey('matches.id'), primary_key=True)
 
     token = db.Column(db.String(32), unique=True)
     is_public = db.Column(db.Boolean, default=False)
+    is_participating = db.Column(db.Boolean, default=False)
 
 
 class Role(db.Model):

@@ -77,3 +77,6 @@ from loc.endpoints.v1.matches import v1_matches
 
 app.register_blueprint(v1_account, url_prefix='/v1/account')
 app.register_blueprint(v1_matches, url_prefix='/v1/matches')
+
+# Cli commands
+from loc import cli

@@ -32,7 +32,7 @@ from loc import db
 from loc.helper import messages as m, util
 from loc.helper.deco import login_required
 from loc.helper.util import api_error, api_fail, api_success
-from loc.models import Match, MatchParticipant, PartyToken, Submission, User
+from loc.models import Match, MatchParticipant, Party, Submission, User
 
 import datetime
 
@@ -68,7 +68,7 @@ def list_current_matches():
             Match.is_deleted == False,
             Match.end_date >= datetime.datetime.utcnow()
         )
-        .order_by(Match.start_date.desc())
+        .order_by(Match.start_date.asc())
         .paginate(page, per_page, error_out=False)
     )
 
@@ -116,7 +116,7 @@ def list_past_matches():
             Match.is_deleted == False,
             Match.end_date <= datetime.datetime.utcnow()
         )
-        .order_by(Match.start_date.desc())
+        .order_by(Match.start_date.asc())
         .paginate(page, per_page, error_out=False)
     )
 
@@ -184,12 +184,6 @@ def match_leaderboard():
     if not match:
         return api_fail(match=m.MATCH_NOT_FOUND), 404
 
-    response = {
-        'page': 1,
-        'pages': 0,
-        'list': []
-    }
-
     # Is leaderboard posted?
     if not match.leaderboard:
         return api_success(**util.paginated(1, 1, [])), 200
@@ -197,13 +191,15 @@ def match_leaderboard():
     # Query parties
     per_page = current_app.config['PARTIES_PER_PAGE']
     parties = (
-        PartyToken
+        Party
         .query
         .filter_by(match_id=match.id)
         .paginate(page, per_page, error_out=False)
     )
 
-    for party in parties:
+    response = []
+
+    for party in parties.items:
         party_details = {
             'leader': '',
             'members': []
@@ -227,10 +223,10 @@ def match_leaderboard():
 
             party_details['members'].append(member[1])
 
-        response['list'].append(party_details)
+        response.append(party_details)
 
 
-    return api_success(**response), 200
+    return api_success(util.paginated(page, parties.pages, response)), 200
 
 
 @v1_matches.route('/join', methods=['POST'])
@@ -262,7 +258,7 @@ def join_match():
 
 
     # Check if the user is participating
-    is_participating = (
+    is_participating = db.session.query(
         MatchParticipant
         .query
         .filter(
@@ -286,10 +282,10 @@ def join_match():
     # Create Party token
     party_token = util.generate_token()
 
-    while util.record_exists(PartyToken, token=party_token):
+    while util.record_exists(Party, token=party_token):
         party_token = util.generate_token()
 
-    new_token = PartyToken(
+    new_token = Party(
         owner_id=user.id,
         match_id=match.id,
         token=party_token,
@@ -359,7 +355,7 @@ def leave_match():
 
     # Check if party is empty and get token if the user is the leader
     if participant.party_owner_id == user.id:
-        other_member = (
+        other_member = db.session.query(
             MatchParticipant
             .query
             .filter(
@@ -372,12 +368,9 @@ def leave_match():
             return api_fail(match=m.PARTY_NOT_EMPTY), 403
 
         party_token = (
-            PartyToken
+            Party
             .query
-            .filter(
-                PartyToken.owner_id == user.id,
-                PartyToken.match_id == match.id
-            )
+            .filter_by(owner_id=user.id, match_id=match.id)
             .first()
         )
 
@@ -398,7 +391,7 @@ def leave_match():
             return api_error(m.RECORD_UPDATE_ERROR), 500
 
 
-    return api_success, 200
+    return api_success(), 200
 
 
 @v1_matches.route('/participants')
@@ -442,13 +435,13 @@ def list_parties():
     per_page = current_app.config['MATCHES_PER_PAGE']
 
     parties = (
-        PartyToken
+        Party
         .query
         .filter_by(match_id=match.id)
         .paginate(page, per_page, error_out=False)
     )
 
-    for party in parties:
+    for party in parties.items:
         party_details = {
             'leader': '',
             'members': []
@@ -516,16 +509,13 @@ def list_lfg():
     per_page = current_app.config['MATCHES_PER_PAGE']
 
     parties = (
-        PartyToken
+        Party
         .query
-        .filter(
-            PartyToken.match_id == match.id,
-            PartyToken.is_visible == True
-        )
+        .filter_by(match_id=match.id, is_visible=True)
         .paginate(page, per_page, error_out=False)
     )
 
-    for party in parties:
+    for party in parties.items:
         party_details = {
             'leader': '',
             'party-token': party.token,
