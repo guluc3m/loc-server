@@ -52,6 +52,7 @@ def upgrade():
     sa.Column('token_expiration', sa.DateTime(), nullable=True),
     sa.Column('is_deleted', sa.Boolean(), nullable=False),
     sa.Column('delete_date', sa.DateTime(), nullable=True),
+    sa.Column('_jwt_counter', sa.Integer(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')

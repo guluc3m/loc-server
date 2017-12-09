@@ -32,12 +32,13 @@ from flask_babel import Babel
 from flask_mail import Mail
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from loc.helper.extra import make_celery
+from loc.bootstrap import BASE_CONFIG, make_celery
 
 import os
 
 
 app = Flask(__name__, instance_relative_config=True)
+app.config.update(BASE_CONFIG)
 
 # Load configuration specified in environment variable or default
 # development one
@@ -68,3 +69,11 @@ mail = Mail(app)
 
 # Setup Celery
 celery = make_celery(app)
+
+
+# Blueprints
+from loc.endpoints.v1.account import v1_account
+from loc.endpoints.v1.matches import v1_matches
+
+app.register_blueprint(v1_account, url_prefix='/v1/account')
+app.register_blueprint(v1_matches, url_prefix='/v1/matches')

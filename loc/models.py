@@ -107,12 +107,12 @@ class Match(db.Model):
         return {
             'id': self.id,
             'title': self.title,
-            'short_description': self.short_description,
-            'long_description': self.long_description if include_long else '',
-            'start_date': self.start_date,
-            'end_date': self.end_date,
-            'min_members': self.min_members,
-            'max_members': self.max_members,
+            'short-description': self.short_description,
+            'long-description': self.long_description if include_long else '',
+            'start-date': self.start_date.isoformat(),
+            'end-date': self.end_date.isoformat(),
+            'min-members': self.min_members,
+            'max-members': self.max_members,
             'slug': self.slug
         }
 
@@ -218,6 +218,7 @@ class User(db.Model):
             Usually should be 24 hours after the creation of the token.
         is_deleted (bool): Whether the record has been (soft) deleted.
         delete_date (date): Date in which the record was (soft) deleted.
+        _jwt_counter (int): Counter to invalidate old tokens.
     """
     __tablename__ = 'users'
 
@@ -235,12 +236,14 @@ class User(db.Model):
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     delete_date = db.Column(db.DateTime)
 
+    _jwt_counter = db.Column(db.Integer, nullable=False, default=0)
+
     # Relationships
     following = db.relationship(
         'User',
         secondary='followers',
         primaryjoin='User.id==Follower.follower_id',
-        secondaryjoin='User.id==Follower.following_id',
+        secondaryjoin='User.id==Follower.followee_id',
         backref=db.backref('followers', lazy='dynamic'),
         lazy='dynamic'
     )

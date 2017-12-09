@@ -76,6 +76,10 @@ def login_required(f):
         if not user:
             return util.api_error(m.USER_NOT_FOUND), 401
 
+        # Token was invalidated?
+        if decoded.get('counter', -1) != user._jwt_counter:
+            return util.api_error(m.JWT_EXPIRED), 401
+
         return f(*args, **kwargs)
 
     return decorated_function
@@ -121,6 +125,10 @@ def role_required(role):
 
             if not user:
                 return util.api_error(m.USER_NOT_FOUND), 401
+
+            # Token was invalidated?
+            if decoded.get('counter', -1) != user._jwt_counter:
+                return util.api_error(m.JWT_EXPIRED), 401
 
             # Check role
             user_role = (

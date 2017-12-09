@@ -30,6 +30,20 @@
 from celery import Celery
 
 
+# Default configuration values
+BASE_CONFIG = {
+    # Flask-SQLAlchemy
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+
+    # JWT
+    'JWT_ALGORITHM': 'HS512',
+
+    # Pagination
+    'MATCHES_PER_PAGE': 20,
+    'PARTIES_PER_PAGE': 30
+}
+
+
 def make_celery(app):
     """Create a Celery object for asynchronous tasks.
 

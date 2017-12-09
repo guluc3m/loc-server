@@ -46,7 +46,7 @@ def api_fail(*args, **kwargs):
     """
     response = {
         'status': 'fail',
-        'data': list(args) or kwargs
+        'data': list(args) or kwargs or None
     }
 
     return jsonify(**response)
@@ -61,7 +61,7 @@ def api_success(*args, **kwargs):
     """
     response = {
         'status': 'success',
-        'data': list(args) or kwargs
+        'data': list(args) or kwargs or None
     }
 
     return jsonify(**response)
@@ -138,6 +138,35 @@ def hash_password(password):
         password.encode(),
         bcrypt.gensalt(rounds=rounds)
     ).decode()
+
+def list_chunks(items, n):
+    """Divide a list in n-sized chunks.
+
+    From: <https://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks>
+
+    Args:
+        items (list): List to divide.
+        n (int): Size of the chunks.
+
+    Returns:
+        Generator
+    """
+    for i in range(0, len(items), n):
+        yield items[i:i+n]
+
+def paginated(page, pages, items):
+    """Generates the structure for a paginated response.
+
+    Args:
+        page (int): Current page number.
+        pages (int): Total pages.
+        items (list): List of items to return.
+    """
+    return {
+        'page': page,
+        'pages': pages,
+        'list': items
+    }
 
 def record_exists(model, **kwargs):
     """Check if a record exists using a simple filter.
