@@ -176,6 +176,12 @@ class MatchParticipant(db.Model):
         lazy='select'
     )
 
+    match = db.relationship(
+        'Match',
+        uselist=False,
+        lazy='select'
+    )
+
 
 class Party(db.Model):
     """Party tokens used to join a party.

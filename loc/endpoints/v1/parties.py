@@ -30,7 +30,7 @@
 from flask import Blueprint, current_app, request
 from loc import db
 from loc.helper import messages as m, util
-from loc.helper.deco import login_required, check_required
+from loc.helper.deco import login_required, check_required, check_optional
 from loc.helper.util import api_error, api_fail, api_success
 from loc.models import Match, MatchParticipant, User, Party
 
@@ -458,3 +458,129 @@ def set_lfg():
 
 
     return api_success(lfg=party.is_public), 200
+
+
+@v1_parties.route('/list')
+@login_required
+@check_optional([('page', int)])
+def user_parties():
+    """List parties the logged in user is in.
+
+    Params:
+        page (int): Optional. Page number to return.
+    """
+    received = request.get_json()
+    page = received.get('page', 1)
+
+    # User record
+    user = util.user_from_jwt(received.get('token'))
+
+    if not user:
+        return api_error(m.USER_NOT_FOUND), 404
+
+
+    # Query parties
+    per_page = current_app.config['MATCHES_PER_PAGE']
+    entries = (
+        db.session
+        .query(MatchParticipant)
+        .join(Match)
+        .filter(
+            MatchParticipant.user_id == user.id,
+            Match.end_date > datetime.datetime.utcnow(),
+            Match.is_visible == True,
+            Match.is_deleted == False
+        )
+        .order_by(Match.start_date.asc())
+        .paginate(page, per_page, error_out=False)
+    )
+
+    response = []
+    for entry in entries.items:
+        details = {}
+
+        # Match details
+        match = entry.match
+
+        details['match'] = {
+            'title': match.title,
+            'start-date': match.start_date.isoformat(),
+            'end-date': match.end_date.isoformat(),
+            'slug': match.slug
+        }
+
+        # Party details
+        party = entry.party
+
+        details['party'] = {
+            'leader': party.owner.username,
+            'members': [u.user.username for u in party.members],
+            'party-token': party.token
+        }
+
+        response.append(details)
+
+    return api_success(**util.paginated(page, entries.pages, response)), 200
+
+
+@v1_parties.route('/list-past')
+@login_required
+@check_optional([('page', int)])
+def user_past_parties():
+    """List parties the logged in user has been in.
+
+    Params:
+        page (int): Optional. Page number to return.
+    """
+    received = request.get_json()
+    page = received.get('page', 1)
+
+    # User record
+    user = util.user_from_jwt(received.get('token'))
+
+    if not user:
+        return api_error(m.USER_NOT_FOUND), 404
+
+
+    # Query parties
+    per_page = current_app.config['MATCHES_PER_PAGE']
+    entries = (
+        db.session
+        .query(MatchParticipant)
+        .join(Match)
+        .filter(
+            MatchParticipant.user_id == user.id,
+            Match.end_date < datetime.datetime.utcnow(),
+            Match.is_visible == True,
+            Match.is_deleted == False
+        )
+        .order_by(Match.start_date.asc())
+        .paginate(page, per_page, error_out=False)
+    )
+
+    response = []
+    for entry in entries.items:
+        details = {}
+
+        # Match details
+        match = entry.match
+
+        details['match'] = {
+            'title': match.title,
+            'start-date': match.start_date.isoformat(),
+            'end-date': match.end_date.isoformat(),
+            'slug': match.slug
+        }
+
+        # Party details
+        party = entry.party
+
+        details['party'] = {
+            'leader': party.owner.username,
+            'members': [u.user.username for u in party.members],
+            'party-token': party.token
+        }
+
+        response.append(details)
+
+    return api_success(**util.paginated(page, entries.pages, response)), 200
