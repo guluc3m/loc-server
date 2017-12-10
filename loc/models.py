@@ -128,7 +128,7 @@ class Match(db.Model):
 
     @staticmethod
     def _by_slug(slug, skip_deleted=True):
-        """Obtain a match by username.
+        """Obtain a match by slug.
 
         Args:
             slug (str): Match slug to find.

@@ -40,7 +40,8 @@ BASE_CONFIG = {
 
     # Pagination
     'MATCHES_PER_PAGE': 20,
-    'PARTIES_PER_PAGE': 30
+    'PARTIES_PER_PAGE': 30,
+    'USERS_PER_PAGE': 50
 }
 
 

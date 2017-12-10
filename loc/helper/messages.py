@@ -20,11 +20,13 @@ MATCH_NOT_STARTED = t('Match has not started')
 MATCH_NOT_FINISHED = t('Match not finished')
 ALREADY_PARTICIPATING = t('You are already participating in the match')
 NOT_PARTICIPATING = t('You are not participating in the match')
+SLUG_EXISTS = t('The slug %s already exists')
 
 # Parameters
 CHECK_DATA = t('Check field for errors')
 FIELD_MISSING = t('Field was missing in request')
 INVALID_TYPE = t('Data type was not valid')
+INVALID_VALUE = t('Data value was not valid')
 
 # Party
 PARTY_NOT_EMPTY = t('Your party is not empty')
@@ -41,6 +43,8 @@ RECORD_CREATE_ERROR = t('Error creating record')
 RECORD_DELETE_ERROR = t('Error deleting record')
 RECORD_UPDATE_ERROR = t('Error updating record')
 RECORD_NOT_FOUND = t('Record not found')
+ALREADY_DELETED = t('The record was already deleted')
+NOT_DELETED = t('The record was not deleted')
 
 # User
 USER_EXISTS = t('A user with the specified details already exists')
