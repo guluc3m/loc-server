@@ -45,7 +45,7 @@ BASE_CONFIG = {
 
     # Client-pairing info
     'CLIENT_ROOT': 'localhost',
-    'CLIENT_FORGOT_PASSWORD_URL': 'localhost'
+    'CLIENT_FORGOT_PASSWORD_URL': 'localhost/%(token)s'
 }
 
 

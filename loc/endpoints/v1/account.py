@@ -115,11 +115,11 @@ def signup():
         mails.WELCOME_SUBJECT,
         mails.WELCOME_BODY % {
             'username': username,
-            'link': current_app.config['CLIENT_ROOT'] + '/login'
+            'link': current_app.config['CLIENT_ROOT']
         },
         mails.WELCOME_HTML % {
             'username': username,
-            'link': current_app.config['CLIENT_ROOT'] + '/login'
+            'link': current_app.config['CLIENT_ROOT']
         }
     )
 
@@ -373,11 +373,11 @@ def forgot_password():
         mails.FORGOT_PASSWORD_SUBJECT,
         mails.FORGOT_PASSWORD_BODY % {
             'username': user.username,
-            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] + '/'+ token
+            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] % {'token': token}
         },
         mails.FORGOT_PASSWORD_HTML % {
             'username': user.username,
-            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] + '/'+ token
+            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] % {'token': token}
         },
     )
 
