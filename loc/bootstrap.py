@@ -38,6 +38,10 @@ BASE_CONFIG = {
     # JWT
     'JWT_ALGORITHM': 'HS512',
 
+    # Celery
+    'CELERY_BROKER_URL': 'redis://localhost:6379',
+    'CELERY_BACKEND': 'redis://localhost:6379',
+
     # Pagination
     'MATCHES_PER_PAGE': 20,
     'PARTIES_PER_PAGE': 30,

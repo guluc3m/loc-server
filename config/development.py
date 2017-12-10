@@ -22,6 +22,6 @@ MATCHES_PER_PAGE = 20
 PARTIES_PER_PAGE = 30
 USERS_PER_PAGE = 50
 
-# Client pairin
+# Client pairing
 CLIENT_ROOT = "localhost",
-CLIENT_FORGOT_PASSWORD_URL = "localhost"
+CLIENT_FORGOT_PASSWORD_URL = "localhost/%(token)s"
