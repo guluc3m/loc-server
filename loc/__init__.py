@@ -75,10 +75,12 @@ celery = make_celery(app)
 from loc.endpoints.v1.account import v1_account
 from loc.endpoints.v1.matches import v1_matches
 from loc.endpoints.v1.parties import v1_parties
+from loc.endpoints.v1.users import v1_users
 
 app.register_blueprint(v1_account, url_prefix='/v1/account')
 app.register_blueprint(v1_matches, url_prefix='/v1/matches')
 app.register_blueprint(v1_parties, url_prefix='/v1/parties')
+app.register_blueprint(v1_users, url_prefix='/v1/users')
 
 # Cli commands
 from loc import cli

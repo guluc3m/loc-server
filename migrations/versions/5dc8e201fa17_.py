@@ -60,6 +60,7 @@ def upgrade():
     op.create_table('followers',
     sa.Column('follower_id', sa.Integer(), nullable=False),
     sa.Column('followee_id', sa.Integer(), nullable=False),
+    sa.Column('follow_date', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['followee_id'], ['users.id'], ),
     sa.ForeignKeyConstraint(['follower_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('follower_id', 'followee_id')

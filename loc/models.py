@@ -29,6 +29,7 @@
 
 from loc import db
 from sqlalchemy.ext.associationproxy import association_proxy
+import datetime
 
 
 class Follower(db.Model):
@@ -50,6 +51,8 @@ class Follower(db.Model):
         db.ForeignKey('users.id'),
         primary_key=True
     )
+
+    follow_date = db.Column(db.DateTime, default=datetime.datetime.utcnow())
 
 
 class Match(db.Model):
@@ -309,7 +312,12 @@ class User(db.Model):
         secondary='followers',
         primaryjoin='User.id==Follower.follower_id',
         secondaryjoin='User.id==Follower.followee_id',
-        backref=db.backref('followers', lazy='dynamic'),
+        order_by='Follower.follow_date.desc()',
+        backref=db.backref(
+            'followers',
+            lazy='dynamic',
+            order_by='Follower.follow_date.desc()'
+        ),
         lazy='dynamic'
     )
 
