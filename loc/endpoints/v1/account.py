@@ -31,10 +31,11 @@ from email_validator import validate_email, EmailNotValidError
 from flask import Blueprint, current_app, request
 from sqlalchemy import or_
 from loc import db
-from loc.helper import messages as m, util
+from loc.helper import messages as m, mails, util
 from loc.helper.deco import login_required, check_required, check_optional
 from loc.helper.util import api_error, api_fail, api_success
 from loc.models import User
+from loc.tasks import async_mail as send_mail
 
 import datetime
 import jwt
@@ -106,6 +107,21 @@ def signup():
         if not correct:
             db.session.rollback()
             return api_error(m.RECORD_CREATE_ERROR), 500
+
+
+    # Send welcome email
+    send_mail(
+        new_user.email,
+        mails.WELCOME_SUBJECT,
+        mails.WELCOME_BODY % {
+            'username': username,
+            'link': current_app.config['CLIENT_ROOT'] + '/login'
+        },
+        mails.WELCOME_HTML % {
+            'username': username,
+            'link': current_app.config['CLIENT_ROOT'] + '/login'
+        }
+    )
 
     return api_success(username), 201
 
@@ -350,8 +366,20 @@ def forgot_password():
             db.session.rollback()
             return api_error(m.RECORD_UPDATE_ERROR), 500
 
-    #TODO send email
-    print(token)
+
+    # Send mail to user
+    send_mail(
+        user.email,
+        mails.FORGOT_PASSWORD_SUBJECT,
+        mails.FORGOT_PASSWORD_BODY % {
+            'username': user.username,
+            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] + '/'+ token
+        },
+        mails.FORGOT_PASSWORD_HTML % {
+            'username': user.username,
+            'link': current_app.config['CLIENT_FORGOT_PASSWORD_URL'] + '/'+ token
+        },
+    )
 
     return api_success(), 200
 

@@ -20,3 +20,8 @@ CELERY_BACKEND = "redis://localhost:6379"
 # Pagination
 MATCHES_PER_PAGE = 20
 PARTIES_PER_PAGE = 30
+USERS_PER_PAGE = 50
+
+# Client pairin
+CLIENT_ROOT = "localhost",
+CLIENT_FORGOT_PASSWORD_URL = "localhost"

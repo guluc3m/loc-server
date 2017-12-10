@@ -29,10 +29,11 @@
 
 from flask import Blueprint, current_app, request
 from loc import db
-from loc.helper import messages as m, util
+from loc.helper import messages as m, mails, util
 from loc.helper.deco import login_required, check_required, check_optional
 from loc.helper.util import api_error, api_fail, api_success
 from loc.models import Match, MatchParticipant, User, Party
+from loc.tasks import async_mail as send_mail
 
 import datetime
 
@@ -297,9 +298,22 @@ def kick_member():
             db.session.rollback()
             return api_error(m.RECORD_UPDATE_ERROR), 500
 
-    #TODO send mail to kicked
-
     response = {'members': [u.user.username for u in participant.party.members]}
+
+    # Send mail to kicked
+    send_mail(
+        to_kick.email,
+        mails.KICKED_SUBJECT,
+        mails.KICKED_BODY % {
+            'username': to_kick.username,
+            'match': match.title
+        },
+        mails.KICKED_HTML % {
+            'username': to_kick.username,
+            'match': match.title
+        },
+    )
+
     return api_success(**response), 200
 
 

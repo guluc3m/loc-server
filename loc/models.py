@@ -208,9 +208,10 @@ class Party(db.Model):
     # Relationships
     members = db.relationship(
         'MatchParticipant',
-        primaryjoin='Party.owner_id==MatchParticipant.party_owner_id',
+        primaryjoin='and_(Party.owner_id==MatchParticipant.party_owner_id, '
+            'Party.match_id==MatchParticipant.match_id)',
         backref=db.backref('party', lazy='select'),
-        lazy='dynamic'
+        lazy='select'
     )
 
     owner = db.relationship(

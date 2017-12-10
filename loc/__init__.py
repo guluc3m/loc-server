@@ -27,7 +27,7 @@
 
 """Application bootstrap."""
 
-from flask import Flask
+from flask import Flask, make_response
 from flask_babel import Babel
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -35,6 +35,10 @@ from flask_sqlalchemy import SQLAlchemy
 from loc.bootstrap import BASE_CONFIG, make_celery
 
 import os
+
+
+__version__ = '0.1.0'
+__api__versions__ = ['v1']
 
 
 app = Flask(__name__, instance_relative_config=True)
@@ -70,6 +74,9 @@ mail = Mail(app)
 # Setup Celery
 celery = make_celery(app)
 
+# Import celery tasks
+from loc.tasks import async_mail
+
 
 # Blueprints
 from loc.endpoints.v1.account import v1_account
@@ -85,3 +92,16 @@ app.register_blueprint(v1_admin, url_prefix='/v1/admin')
 
 # Cli commands
 from loc import cli
+
+@app.route('/')
+def root():
+    content = (
+        'League of Code server - by GUL UC3M\n\n'
+        'Version: %s\n'
+        'Supported API versions: %s'
+    ) % (__version__, ', '.join(__api__versions__))
+
+    response = make_response(content)
+    response.headers['content-type'] = 'text/plain'
+
+    return response

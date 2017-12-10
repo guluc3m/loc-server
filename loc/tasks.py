@@ -25,51 +25,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Additional functions for bootstrapping the application."""
+"""Asynchronous tasks."""
 
-from celery import Celery
-
-
-# Default configuration values
-BASE_CONFIG = {
-    # Flask-SQLAlchemy
-    'SQLALCHEMY_TRACK_MODIFICATIONS': False,
-
-    # JWT
-    'JWT_ALGORITHM': 'HS512',
-
-    # Pagination
-    'MATCHES_PER_PAGE': 20,
-    'PARTIES_PER_PAGE': 30,
-    'USERS_PER_PAGE': 50,
-
-    # Client-pairing info
-    'CLIENT_ROOT': 'localhost',
-    'CLIENT_FORGOT_PASSWORD_URL': 'localhost'
-}
+from loc import celery, mail
+from flask_mail import Message
 
 
-def make_celery(app):
-    """Create a Celery object for asynchronous tasks.
+@celery.task()
+def async_mail(to, subject, body, html=None):
+    """Send an asynchronous email
 
-    Based on <http://flask.pocoo.org/docs/0.11/patterns/celery/>
-
-    The application context is needed by extensions such as Flask-Mail.
+    Args:
+        to (str): Destination email address.
+        subject (str): Subject of the mail.
+        body (str): Content of the mail.
     """
-    cel = Celery(
-        app.import_name,
-        backend=app.config['CELERY_BACKEND'],
-        broker=app.config['CELERY_BROKER_URL']
+    message = Message(
+        subject,
+        recipients=[to],
+        body=body,
+        html=html
     )
 
-    cel.conf.update(app.config)
-    TaskBase = cel.Task
-
-    class ContextTask(TaskBase):
-        abstract = True
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
-
-    cel.Task = ContextTask
-    return cel
+    mail.send(message)
