@@ -117,7 +117,7 @@ def new_match():
         data['slug'] = slugify.slugify(data['title'], to_lower=True)
 
     if util.record_exists(Match, slug=data['slug']):
-        return api_fail(slug=m.SLUG_EXISTS % data['slug']), 409
+        return api_fail(slug=m.SLUG_EXISTS % {'slug': data['slug']}), 409
 
 
     # Create match
@@ -232,7 +232,7 @@ def modify_match():
 
     if data['slug'] != match.slug:
         if util.record_exists(Match, slug=data['slug']):
-            return api_fail(slug=m.SLUG_EXISTS % data['slug']), 409
+            return api_fail(slug=m.SLUG_EXISTS % {'slug': data['slug']}), 409
 
 
     # Edit match

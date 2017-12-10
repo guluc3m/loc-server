@@ -45,7 +45,7 @@ MATCH_NOT_STARTED = t('Match has not started')
 MATCH_NOT_FINISHED = t('Match not finished')
 ALREADY_PARTICIPATING = t('You are already participating in the match')
 NOT_PARTICIPATING = t('You are not participating in the match')
-SLUG_EXISTS = t('The slug %s already exists')
+SLUG_EXISTS = t('The slug %(slug)s already exists')
 
 # Parameters
 CHECK_DATA = t('Check field for errors')
