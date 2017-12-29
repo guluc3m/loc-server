@@ -32,6 +32,9 @@ from celery import Celery
 
 # Default configuration values
 BASE_CONFIG = {
+    # Server information
+    'SERVER_DESCRIPTION': 'Reference LoC server implementation',
+
     # Flask-SQLAlchemy
     'SQLALCHEMY_TRACK_MODIFICATIONS': False,
 

@@ -2,6 +2,9 @@ SQLALCHEMY_DATABASE_URI = "sqlite:////tmp/test.db"
 SECRET_KEY = "potato"
 DEBUG = True
 
+# Server information
+SERVER_DESCRIPTION = "Reference LoC server implementation"
+
 # JWT
 JWT_ALGORITHM = "HS512"
 
