@@ -57,7 +57,6 @@ def user_profile():
     response = {
         'username': user.username,
         'name': user.name,
-        'points': user.points
     }
 
     return api_success(**response), 200

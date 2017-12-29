@@ -176,7 +176,8 @@ def match_leaderboard():
     parties = (
         Party
         .query
-        .filter_by(match_id=match.id)
+        .filter_by(match_id=match.id, is_participating=True)
+        .order_by(Party.position.asc())
         .paginate(page, per_page, error_out=False)
     )
 
@@ -185,6 +186,7 @@ def match_leaderboard():
     for party in parties.items:
         party_details = {
             'leader': '',
+            'position': party.position,
             'members': []
         }
 

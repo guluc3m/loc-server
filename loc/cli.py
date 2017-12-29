@@ -68,7 +68,7 @@ def dbseed():
         ),
         min_members=1,
         max_members=3,
-        leaderboard='1,8,10,7,12,3',
+        leaderboard=True,
         slug='test-match-1',
         is_visible=True
     ))
@@ -92,7 +92,7 @@ def dbseed():
         ),
         min_members=1,
         max_members=3,
-        leaderboard='',
+        leaderboard=False,
         slug='test-match-2',
         is_visible=True
     ))
@@ -116,7 +116,7 @@ def dbseed():
         ),
         min_members=1,
         max_members=3,
-        leaderboard='',
+        leaderboard=False,
         slug='test-match-3',
         is_visible=True
     ))
@@ -143,12 +143,12 @@ def dbseed():
     db.session.commit()
 
     # Parties
-    db.session.add(Party(owner_id=1, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
-    db.session.add(Party(owner_id=3, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
-    db.session.add(Party(owner_id=8, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
-    db.session.add(Party(owner_id=7, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
-    db.session.add(Party(owner_id=10, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
-    db.session.add(Party(owner_id=12, match_id=1, token=util.generate_token(), is_public=False, is_participating=True))
+    db.session.add(Party(owner_id=1, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=1))
+    db.session.add(Party(owner_id=3, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=6))
+    db.session.add(Party(owner_id=8, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=2))
+    db.session.add(Party(owner_id=7, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=4))
+    db.session.add(Party(owner_id=10, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=3))
+    db.session.add(Party(owner_id=12, match_id=1, token=util.generate_token(), is_public=False, is_participating=True, position=5))
 
     db.session.add(Party(owner_id=1, match_id=2, token=util.generate_token(), is_public=False, is_participating=True))
     db.session.add(Party(owner_id=5, match_id=2, token=util.generate_token(), is_public=False, is_participating=True))

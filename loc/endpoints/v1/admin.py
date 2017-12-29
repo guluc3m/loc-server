@@ -150,6 +150,7 @@ def new_match():
     ('end-date', str),
     ('min-members', int),
     ('max-members', int),
+    ('leaderboard', bool),
     ('is-visible', bool),
     ('slug', str)
 ])
@@ -165,6 +166,7 @@ def modify_match():
         end-date (datetime): When the match ends.
         min-members (int): Minimum party members required.
         max-members (int): Maximum party members allowed.
+        leaderboard (bool): Whether to show or hide the leaderboard.
         is-visible (bool): Whether the match can be found.
         slug (str): New slug for the match.
     """
@@ -190,6 +192,7 @@ def modify_match():
         'end_date': received.get('end-date'),
         'min_members': received.get('min-members'),
         'max_members': received.get('max-members'),
+        'leaderboard': received.get('leaderboard'),
         'is_visible': received.get('is-visible'),
         'slug': received.get('slug')
     }
@@ -498,3 +501,139 @@ def toggle_user_delete():
             return api_error(m.RECORD_CREATE_ERROR), 500
 
     return api_success(**response), 200
+
+
+@v1_admin.route('/match-leaderboard')
+@role_required('admin')
+@check_required([('match', str)])
+@check_optional([('page', int)])
+def get_match_leaderboard():
+    """Obtain paginated leaderboard of the match.
+
+    Params:
+        match (str): Unique slug of the match.
+        page (int): Optional. Page number to return.
+    """
+    received = request.get_json()
+    slug = received.get('match')
+    page = received.get('page', 1)
+
+    # Query match
+    match = Match._by_slug(slug)
+
+    if not match:
+        return api_fail(match=m.MATCH_NOT_FOUND), 404
+
+    # Query parties
+    per_page = current_app.config['PARTIES_PER_PAGE']
+    parties = (
+        Party
+        .query
+        .filter_by(match_id=match.id, is_participating=True)
+        .order_by(Party.position.asc())
+        .paginate(page, per_page, error_out=False)
+    )
+
+    response = []
+
+    for party in parties.items:
+        party_details = {
+            'leader': '',
+            'position': party.position,
+            'members': []
+        }
+
+        members = (
+            db.session
+            .query(User.id, User.username)
+            .join(MatchParticipant, User.id==MatchParticipant.user_id)
+            .filter(
+                MatchParticipant.party_owner_id == party.owner_id,
+                MatchParticipant.match_id == match.id,
+                User.is_deleted == False
+            )
+            .all()
+        )
+
+        for member in members:
+            if member[0] == party.owner_id:
+                party_details['leader'] = member[1]
+
+            party_details['members'].append(member[1])
+
+        response.append(party_details)
+
+
+    return api_success(util.paginated(page, parties.pages, response)), 200
+
+
+@v1_admin.route('/match-leaderboard', methods=['PUT'])
+@role_required('admin')
+@check_required([('match', str), ('positions', list)])
+def set_match_leaderboard():
+    """Obtain paginated leaderboard of the match.
+
+    Params:
+        match (str): Unique slug of the match.
+        positions (list[dict]): List of parties to update and their positions.
+    """
+    received = request.get_json()
+    slug = received.get('match')
+    positions = received.get('positions')
+
+    # Query match
+    match = Match._by_slug(slug)
+
+    if not match:
+        return api_fail(match=m.MATCH_NOT_FOUND), 404
+
+    response = []
+
+    # Query parties
+    for position in positions:
+        if not isinstance(position, dict):
+            continue
+
+        leader = position.get('party')
+        new_pos = position.get('position')
+
+        if not leader or not new_pos:
+            continue
+
+        owner = User._by_username(leader)
+
+        if not owner:
+            continue
+
+        party = (
+            Party
+            .query
+            .filter_by(
+                owner_id=owner.id,
+                match_id=match.id,
+                is_participating=True
+            )
+            .first()
+        )
+
+        if not party:
+            continue
+
+        # Update position
+        party.position = new_pos
+        response.append(leader)
+
+
+    try:
+        correct = True
+        db.session.commit()
+
+    except Exception as e:
+        correct = False
+
+    finally:
+        if not correct:
+            db.session.rollback()
+            return api_error(m.RECORD_CREATE_ERROR), 500
+
+    return api_success(*response), 200

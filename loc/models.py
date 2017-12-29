@@ -70,8 +70,7 @@ class Match(db.Model):
             accepted after this date.
         min_members (int): Minimum number of users in a party.
         max_members (int): Maximum number of users in a party.
-        leaderboard (str): Sorted comma-separated list of parties taking into
-            account their position after finishing the match
+        leaderboard (bool): Whether the leaderboard has been set.
         slug (str): Unique slug generated from the title of the match.
         is_visible (bool): Whether this match should be shown publicly.
         is_deleted (bool): Whether the record has been (soft) deleted.
@@ -88,7 +87,7 @@ class Match(db.Model):
     end_date = db.Column(db.DateTime, nullable=False)
     min_members = db.Column(db.Integer, nullable=False, default=1)
     max_members = db.Column(db.Integer, nullable=False, default=1)
-    leaderboard = db.Column(db.Text)
+    leaderboard = db.Column(db.Boolean, default=False)
     slug = db.Column(db.String(128), nullable=False, unique=True)
     is_visible = db.Column(db.Boolean, nullable=False, default=False)
 
@@ -195,6 +194,7 @@ class Party(db.Model):
         token (str): Unique random token.
         is_public (bool): Whether the party can be publicly found.
         is_participating (bool): Whether the party is participating in the match.
+        position (int): Position in the match.
     """
     __tablename__ = 'parties'
 
@@ -204,6 +204,7 @@ class Party(db.Model):
     token = db.Column(db.String(32), unique=True)
     is_public = db.Column(db.Boolean, default=False)
     is_participating = db.Column(db.Boolean, default=False)
+    position = db.Column(db.Integer, default=-1)
 
     # Relationships
     members = db.relationship(
@@ -281,7 +282,6 @@ class User(db.Model):
         name (str): (Optional) Real name of the user.
         email (str): Unique email used for communication and password reset.
         password (str): Encrypted password.
-        points (int): Total score obtained by participating in matches.
         pasword_reset_token (str): Unique token for restoring password.
         token_expiration (date): Date in which the reset token stops being valid.
             Usually should be 24 hours after the creation of the token.
@@ -297,7 +297,6 @@ class User(db.Model):
     name = db.Column(db.String(255), nullable=False, default='')
     email = db.Column(db.String(255), nullable=False, unique=True)
     password = db.Column(db.String(255), nullable=False)
-    points = db.Column(db.Integer, nullable=False, default=0)
 
     password_reset_token = db.Column(db.String(64))
     token_expiration = db.Column(db.DateTime)
